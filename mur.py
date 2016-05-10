@@ -5,20 +5,7 @@ import numpy as np
 import scipy.io as sio
 import mur_funcs
 
-#Function definitions
-def dist_euclid( X, WdotH ):
-    """Euclidian distance"""
-    value = 0.5 * np.sum( (X - WdotH)**2 )
-    return value
-
-def dist_kl( X, W, H ):
-    """Kullback-Leibler divergence"""
-    value = X * np.log( X / np.dot(W,H) )
-    #value(~isfinite(value))=0
-    value = np.sum( value - X + np.dot(W,H) )
-    return value
-
-def mur( X, k, kl=False ):
+def mur( X, k, kl=False, maxiter=100000 ):
     """ NMF with MUR 
     
     Expects following arguments:
@@ -26,9 +13,8 @@ def mur( X, k, kl=False ):
     k -- number of components
     """
     #Parameters
-    maxiter = 100
-    tol = 1e-5
-    s = 1e-5
+    tol = 1e-3
+    s = 1e-3
     savestr = 'nmf_mur_' + str(k) + '_' + str(kl)
     savestr = 'delme' 
     if np.min(X) < 0:
@@ -52,7 +38,7 @@ def mur( X, k, kl=False ):
     WdotH = np.dot(W,H) 
     if kl:
         print('Using Kullback-Leibler divergence.')
-        objhistory = [dist_kl(X,W,H)]
+        objhistory = [mur.funcs.dist_kl(X,WdotH)]
     else:
         print('Using euclidian distance.')
         #objhistory = [dist_euclid(X,WdotH)]
@@ -66,21 +52,16 @@ def mur( X, k, kl=False ):
             print('Max iteration. Results saved in ' + savestr)
     
         if kl:
-            H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) ) 
-            W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
+            W, H = mur.funcs.WH_update_kl(X,W,H)
         else:
-            #H = H * np.dot( W.T, X ) / ( np.dot( W.T, WdotH ) + 1e-9)
-            #W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)  
-            W, H = mur_funcs.WH_update(X,W,H)
-            print(W.flags)
-            print(H.flags)
+            W, H = mur_funcs.WH_update_euclid(X,W,H)
     
         norms = np.sqrt(np.sum(H.T**2,0))
         H = H/norms[:,None]
         W = W*norms
         WdotH = np.dot(W,H) 
         if kl:
-            newobj = dist_kl(X,W,H)
+            newobj = mur_funcs.dist_kl(X,W,H)
         else:
             #newobj = dist_euclid(X,WdotH)
             newobj = mur_funcs.dist_euclid(X,WdotH)
@@ -110,6 +91,7 @@ if __name__ == '__main__':
     p.add_argument('-f', default='', type=str, dest='filestr')
     p.add_argument('-k', default=1, type=int)
     p.add_argument('-kl', action='store_true')
+    p.add_argument('-i', default=100000, type=int, dest='maxiter')
     args = p.parse_args()
     k = args.k
 
@@ -118,4 +100,4 @@ if __name__ == '__main__':
     X = np.reshape(X, (332*332*79, 9), order='F')
 
     # call function
-    mur( X, k, args.kl )
+    mur( X, k, kl=args.kl, maxiter=args.maxiter )
