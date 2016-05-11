@@ -1,6 +1,8 @@
 # VIM swap/undo files
 *.un~
 *.swp
+# results folder
+results
 # symbolic link
 data
 
