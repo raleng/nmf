@@ -1,6 +1,8 @@
 # VIM swap/undo files
 *.un~
 *.swp
+# symbolic link
+data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
