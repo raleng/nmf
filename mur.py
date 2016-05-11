@@ -16,7 +16,7 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     tol = 1e-3
     s = 1e-3
     savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
-    savestr = './results/delme' 
+    savestr = './results/delme2' 
     if np.min(X) < 0:
         X = X + abs(np.min(X))
         print('Daten werden hochgesetzt.')
@@ -29,7 +29,7 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     #W = np.abs(np.random.randn(xdim,k))
     #H = np.abs(np.random.randn(k,samples))
     print('Loading initial matrices.')
-    inimat = sio.loadmat('data/msot-matlab/k4_ini.mat')
+    inimat = sio.loadmat('/home/ralf/uni/data/msot-matlab/k4_ini.mat')
     W = inimat['W_ini']
     H = inimat['H_ini']
 
