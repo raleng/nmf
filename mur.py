@@ -15,8 +15,8 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     #Parameters
     tol = 1e-3
     s = 1e-3
-    savestr = 'nmf_mur_' + str(k) + '_' + str(kl)
-    savestr = 'delme' 
+    savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
+    savestr = './results/delme' 
     if np.min(X) < 0:
         X = X + abs(np.min(X))
         print('Daten werden hochgesetzt.')
@@ -29,11 +29,9 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     #W = np.abs(np.random.randn(xdim,k))
     #H = np.abs(np.random.randn(k,samples))
     print('Loading initial matrices.')
-    inimat = sio.loadmat('k4_ini.mat')
+    inimat = sio.loadmat('data/msot-matlab/k4_ini.mat')
     W = inimat['W_ini']
     H = inimat['H_ini']
-    print(W.flags)
-    print(H.flags)
 
     WdotH = np.dot(W,H) 
     if kl:
@@ -92,6 +90,8 @@ if __name__ == '__main__':
     p.add_argument('-k', default=1, type=int)
     p.add_argument('-kl', action='store_true')
     p.add_argument('-i', default=100000, type=int, dest='maxiter')
+    p.add_argument('-aW', default=0, type=float, dest='alpha_W')
+    p.add_argument('-aH', default=0, type=float, dest='alpha_H')
     args = p.parse_args()
     k = args.k
 
@@ -100,4 +100,4 @@ if __name__ == '__main__':
     X = np.reshape(X, (332*332*79, 9), order='F')
 
     # call function
-    mur( X, k, kl=args.kl, maxiter=args.maxiter )
+    mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W, alpha_H=args.alpha_H )
