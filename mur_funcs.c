@@ -664,6 +664,8 @@ static const char __pyx_k_WdotH[] = "WdotH";
 static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_value[] = "value";
 static const char __pyx_k_import[] = "__import__";
+static const char __pyx_k_alpha_H[] = "alpha_H";
+static const char __pyx_k_alpha_W[] = "alpha_W";
 static const char __pyx_k_dist_kl[] = "dist_kl";
 static const char __pyx_k_mur_funcs[] = "mur_funcs";
 static const char __pyx_k_dist_euclid[] = "dist_euclid";
@@ -677,6 +679,8 @@ static PyObject *__pyx_n_s_WH_update_euclid;
 static PyObject *__pyx_n_s_WH_update_kl;
 static PyObject *__pyx_n_s_WdotH;
 static PyObject *__pyx_n_s_X;
+static PyObject *__pyx_n_s_alpha_H;
+static PyObject *__pyx_n_s_alpha_W;
 static PyObject *__pyx_n_s_dist_euclid;
 static PyObject *__pyx_n_s_dist_kl;
 static PyObject *__pyx_n_s_dot;
@@ -692,7 +696,7 @@ static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_value;
 static PyObject *__pyx_pf_9mur_funcs_dist_euclid(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_WdotH); /* proto */
 static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_WdotH); /* proto */
-static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_W, PyObject *__pyx_v_H); /* proto */
+static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_W, PyObject *__pyx_v_H, PyObject *__pyx_v_alpha_W, PyObject *__pyx_v_alpha_H); /* proto */
 static PyObject *__pyx_pf_9mur_funcs_6WH_update_kl(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_W, PyObject *__pyx_v_H); /* proto */
 static PyObject *__pyx_float_0_5;
 static PyObject *__pyx_float_1eneg_9;
@@ -1048,7 +1052,7 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
  *     value = np.sum( value - X + WdotH )
  *     return value             # <<<<<<<<<<<<<<
  * 
- * def WH_update_euclid(X,W,H):
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_v_value);
@@ -1082,9 +1086,9 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
 /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H):             # <<<<<<<<<<<<<<
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
 
 /* Python wrapper */
@@ -1094,16 +1098,20 @@ static PyObject *__pyx_pw_9mur_funcs_5WH_update_euclid(PyObject *__pyx_self, PyO
   PyObject *__pyx_v_X = 0;
   PyObject *__pyx_v_W = 0;
   PyObject *__pyx_v_H = 0;
+  PyObject *__pyx_v_alpha_W = 0;
+  PyObject *__pyx_v_alpha_H = 0;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("WH_update_euclid (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_X,&__pyx_n_s_W,&__pyx_n_s_H,0};
-    PyObject* values[3] = {0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_X,&__pyx_n_s_W,&__pyx_n_s_H,&__pyx_n_s_alpha_W,&__pyx_n_s_alpha_H,0};
+    PyObject* values[5] = {0,0,0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
         case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
         case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
@@ -1118,44 +1126,58 @@ static PyObject *__pyx_pw_9mur_funcs_5WH_update_euclid(PyObject *__pyx_self, PyO
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_W)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 3, 3, 1); __PYX_ERR(0, 15, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 5, 5, 1); __PYX_ERR(0, 15, __pyx_L3_error)
         }
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_H)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 3, 3, 2); __PYX_ERR(0, 15, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 5, 5, 2); __PYX_ERR(0, 15, __pyx_L3_error)
+        }
+        case  3:
+        if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_alpha_W)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 5, 5, 3); __PYX_ERR(0, 15, __pyx_L3_error)
+        }
+        case  4:
+        if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_alpha_H)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 5, 5, 4); __PYX_ERR(0, 15, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "WH_update_euclid") < 0)) __PYX_ERR(0, 15, __pyx_L3_error)
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
     }
     __pyx_v_X = values[0];
     __pyx_v_W = values[1];
     __pyx_v_H = values[2];
+    __pyx_v_alpha_W = values[3];
+    __pyx_v_alpha_H = values[4];
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 15, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("WH_update_euclid", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 15, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("mur_funcs.WH_update_euclid", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_9mur_funcs_4WH_update_euclid(__pyx_self, __pyx_v_X, __pyx_v_W, __pyx_v_H);
+  __pyx_r = __pyx_pf_9mur_funcs_4WH_update_euclid(__pyx_self, __pyx_v_X, __pyx_v_W, __pyx_v_H, __pyx_v_alpha_W, __pyx_v_alpha_H);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_W, PyObject *__pyx_v_H) {
+static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_X, PyObject *__pyx_v_W, PyObject *__pyx_v_H, PyObject *__pyx_v_alpha_W, PyObject *__pyx_v_alpha_H) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1173,9 +1195,9 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
 
   /* "mur_funcs.pyx":16
  * 
- * def WH_update_euclid(X,W,H):
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)             # <<<<<<<<<<<<<<
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)             # <<<<<<<<<<<<<<
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  *     return W, H
  */
   __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
@@ -1281,20 +1303,26 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyFloat_AddObjC(__pyx_t_1, __pyx_float_1eneg_9, 1e-9, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_alpha_H, __pyx_v_H); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_9 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 16, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyFloat_AddObjC(__pyx_t_9, __pyx_float_1eneg_9, 1e-9, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+  __pyx_t_9 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF_SET(__pyx_v_H, __pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(__pyx_v_H, __pyx_t_9);
+  __pyx_t_9 = 0;
 
   /* "mur_funcs.pyx":17
- * def WH_update_euclid(X,W,H):
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)             # <<<<<<<<<<<<<<
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)             # <<<<<<<<<<<<<<
  *     return W, H
  * 
  */
@@ -1305,13 +1333,13 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_H, __pyx_n_s_T); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_9 = NULL;
+  __pyx_t_1 = NULL;
   __pyx_t_5 = 0;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
-    __pyx_t_9 = PyMethod_GET_SELF(__pyx_t_3);
-    if (likely(__pyx_t_9)) {
+    __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_3);
+    if (likely(__pyx_t_1)) {
       PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-      __Pyx_INCREF(__pyx_t_9);
+      __Pyx_INCREF(__pyx_t_1);
       __Pyx_INCREF(function);
       __Pyx_DECREF_SET(__pyx_t_3, function);
       __pyx_t_5 = 1;
@@ -1319,8 +1347,8 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   }
   __pyx_t_4 = PyTuple_New(2+__pyx_t_5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (__pyx_t_9) {
-    __Pyx_GIVEREF(__pyx_t_9); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_9); __pyx_t_9 = NULL;
+  if (__pyx_t_1) {
+    __Pyx_GIVEREF(__pyx_t_1); PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1); __pyx_t_1 = NULL;
   }
   __Pyx_INCREF(__pyx_v_X);
   __Pyx_GIVEREF(__pyx_v_X);
@@ -1328,25 +1356,25 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_4, 1+__pyx_t_5, __pyx_t_2);
   __pyx_t_2 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyNumber_Multiply(__pyx_v_W, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Multiply(__pyx_v_W, __pyx_t_9); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_dot); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_9 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 17, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_dot); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_dot); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_H, __pyx_n_s_T); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 17, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_9);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_H, __pyx_n_s_T); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_8 = NULL;
   __pyx_t_5 = 0;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_6))) {
@@ -1367,9 +1395,9 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __Pyx_INCREF(__pyx_v_H);
   __Pyx_GIVEREF(__pyx_v_H);
   PyTuple_SET_ITEM(__pyx_t_7, 0+__pyx_t_5, __pyx_v_H);
-  __Pyx_GIVEREF(__pyx_t_9);
-  PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_5, __pyx_t_9);
-  __pyx_t_9 = 0;
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_5, __pyx_t_1);
+  __pyx_t_1 = 0;
   __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_7, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -1397,46 +1425,52 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __Pyx_GIVEREF(__pyx_t_4);
   PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_5, __pyx_t_4);
   __pyx_t_4 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_7, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_7, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyFloat_AddObjC(__pyx_t_1, __pyx_float_1eneg_9, 1e-9, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_alpha_W, __pyx_v_W); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyNumber_Add(__pyx_t_9, __pyx_t_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyFloat_AddObjC(__pyx_t_7, __pyx_float_1eneg_9, 1e-9, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF_SET(__pyx_v_W, __pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(__pyx_v_W, __pyx_t_7);
+  __pyx_t_7 = 0;
 
   /* "mur_funcs.pyx":18
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  *     return W, H             # <<<<<<<<<<<<<<
  * 
  * def WH_update_kl(X,W,H):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
   __Pyx_INCREF(__pyx_v_W);
   __Pyx_GIVEREF(__pyx_v_W);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_v_W);
+  PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_v_W);
   __Pyx_INCREF(__pyx_v_H);
   __Pyx_GIVEREF(__pyx_v_H);
-  PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_H);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
+  PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_H);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
   goto __pyx_L0;
 
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H):             # <<<<<<<<<<<<<<
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
 
   /* function exit code */
@@ -1867,6 +1901,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_WH_update_kl, __pyx_k_WH_update_kl, sizeof(__pyx_k_WH_update_kl), 0, 0, 1, 1},
   {&__pyx_n_s_WdotH, __pyx_k_WdotH, sizeof(__pyx_k_WdotH), 0, 0, 1, 1},
   {&__pyx_n_s_X, __pyx_k_X, sizeof(__pyx_k_X), 0, 0, 1, 1},
+  {&__pyx_n_s_alpha_H, __pyx_k_alpha_H, sizeof(__pyx_k_alpha_H), 0, 0, 1, 1},
+  {&__pyx_n_s_alpha_W, __pyx_k_alpha_W, sizeof(__pyx_k_alpha_W), 0, 0, 1, 1},
   {&__pyx_n_s_dist_euclid, __pyx_k_dist_euclid, sizeof(__pyx_k_dist_euclid), 0, 0, 1, 1},
   {&__pyx_n_s_dist_kl, __pyx_k_dist_kl, sizeof(__pyx_k_dist_kl), 0, 0, 1, 1},
   {&__pyx_n_s_dot, __pyx_k_dot, sizeof(__pyx_k_dot), 0, 0, 1, 1},
@@ -1917,14 +1953,14 @@ static int __Pyx_InitCachedConstants(void) {
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H):             # <<<<<<<<<<<<<<
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
-  __pyx_tuple__5 = PyTuple_Pack(3, __pyx_n_s_X, __pyx_n_s_W, __pyx_n_s_H); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(5, __pyx_n_s_X, __pyx_n_s_W, __pyx_n_s_H, __pyx_n_s_alpha_W, __pyx_n_s_alpha_H); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
-  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_ralf_uni_nmf_mur_funcs_pyx, __pyx_n_s_WH_update_euclid, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_ralf_uni_nmf_mur_funcs_pyx, __pyx_n_s_WH_update_euclid, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 15, __pyx_L1_error)
 
   /* "mur_funcs.pyx":20
  *     return W, H
@@ -2085,9 +2121,9 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H):             # <<<<<<<<<<<<<<
- *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + 1e-9)
- *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + 1e-9)
+ * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
+ *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
   __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_9mur_funcs_5WH_update_euclid, NULL, __pyx_n_s_mur_funcs); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);

@@ -5,7 +5,7 @@ import numpy as np
 import scipy.io as sio
 import mur_funcs
 
-def mur( X, k, kl=False, maxiter=100000 ):
+def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     """ NMF with MUR 
     
     Expects following arguments:
@@ -52,9 +52,9 @@ def mur( X, k, kl=False, maxiter=100000 ):
             print('Max iteration. Results saved in ' + savestr)
     
         if kl:
-            W, H = mur.funcs.WH_update_kl(X,W,H)
+            W, H = mur.funcs.WH_update_kl( X, W, H )
         else:
-            W, H = mur_funcs.WH_update_euclid(X,W,H)
+            W, H = mur_funcs.WH_update_euclid( X, W, H, alpha_W, alpha_H )
     
         norms = np.sqrt(np.sum(H.T**2,0))
         H = H/norms[:,None]
