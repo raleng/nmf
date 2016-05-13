@@ -93,8 +93,8 @@ if __name__ == '__main__':
     p.add_argument('-i', default=100000, type=int, dest='maxiter')
     p.add_argument('-aW', default=0, type=float, dest='alpha_W')
     p.add_argument('-aH', default=0, type=float, dest='alpha_H')
-    p.add_argument('--file-str', default="nmf_default" type=str, dest='file_str')
-    p.add_argument('--dir-str', default="./results/" type=str, dest='dir_str')
+    p.add_argument('--file-str', default='nmf_default', type=str, dest='file_str')
+    p.add_argument('--dir-str', default='./results/', type=str, dest='dir_str')
     args = p.parse_args()
     k = args.k
 
