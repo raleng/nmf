@@ -5,7 +5,7 @@ import numpy as np
 import scipy.io as sio
 import mur_funcs
 
-def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
+def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0, dir_str="./results/", file_str="nmf_default" ):
     """ NMF with MUR 
     
     Expects following arguments:
@@ -15,8 +15,9 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0 ):
     #Parameters
     tol = 1e-3
     s = 1e-3
-    savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
-    savestr = './results/delme2' 
+    savestr = dir_str + file_str + '_' + str(k) + '_' + str(kl)
+    #savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
+    #savestr = './results/delme2' 
     if np.min(X) < 0:
         X = X + abs(np.min(X))
         print('Daten werden hochgesetzt.')
@@ -86,18 +87,20 @@ if __name__ == '__main__':
 
     #Parsing arguments
     p = argparse.ArgumentParser()
-    p.add_argument('-f', default='', type=str, dest='filestr')
+    p.add_argument('-f', default='', type=str, dest='file_name')
     p.add_argument('-k', default=1, type=int)
     p.add_argument('-kl', action='store_true')
     p.add_argument('-i', default=100000, type=int, dest='maxiter')
     p.add_argument('-aW', default=0, type=float, dest='alpha_W')
     p.add_argument('-aH', default=0, type=float, dest='alpha_H')
+    p.add_argument('--file-str', default="nmf_default" type=str, dest='file_str')
+    p.add_argument('--dir-str', default="./results/" type=str, dest='dir_str')
     args = p.parse_args()
     k = args.k
 
     # loading data from file
-    X = np.fromfile(args.filestr, np.float32)
+    X = np.fromfile(args.file_name, np.float32)
     X = np.reshape(X, (332*332*79, 9), order='F')
 
     # call function
-    mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W, alpha_H=args.alpha_H )
+    mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W, alpha_H=args.alpha_H, file_str=args.file_str, dir_str=args.dir_str)
