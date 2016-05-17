@@ -5,7 +5,8 @@ import numpy as np
 import scipy.io as sio
 import mur_funcs
 
-def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0, dir_str="./results/", file_str="nmf_default" ):
+def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
+        dir_str="./results/", file_str="nmf_default" ):
     """ NMF with MUR 
     
     Expects following arguments:
@@ -27,12 +28,12 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0, dir_str="./result
     xdim = X.shape[0]
     samples = X.shape[1]
     
-    #W = np.abs(np.random.randn(xdim,k))
-    #H = np.abs(np.random.randn(k,samples))
-    print('Loading initial matrices.')
-    inimat = sio.loadmat('/home/ralf/uni/data/msot-matlab/k4_ini.mat')
-    W = inimat['W_ini']
-    H = inimat['H_ini']
+    W = np.abs(np.random.randn(xdim,k))
+    H = np.abs(np.random.randn(k,samples))
+    #print('Loading initial matrices.')
+    #inimat = sio.loadmat('/home/ralf/uni/data/msot-matlab/k4_ini.mat')
+    #W = inimat['W_ini']
+    #H = inimat['H_ini']
 
     WdotH = np.dot(W,H) 
     if kl:
@@ -93,8 +94,10 @@ if __name__ == '__main__':
     p.add_argument('-i', default=100000, type=int, dest='maxiter')
     p.add_argument('-aW', default=0, type=float, dest='alpha_W')
     p.add_argument('-aH', default=0, type=float, dest='alpha_H')
-    p.add_argument('--file-str', default='nmf_default', type=str, dest='file_str')
-    p.add_argument('--dir-str', default='./results/', type=str, dest='dir_str')
+    p.add_argument('--file-str', default='nmf_default', type=str, 
+                   dest='file_str')
+    p.add_argument('--dir-str', default='./results/', type=str, 
+                   dest='dir_str')
     args = p.parse_args()
     k = args.k
 
@@ -103,4 +106,5 @@ if __name__ == '__main__':
     X = np.reshape(X, (332*332*79, 9), order='F')
 
     # call function
-    mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W, alpha_H=args.alpha_H, file_str=args.file_str, dir_str=args.dir_str)
+    mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W, 
+        alpha_H=args.alpha_H, file_str=args.file_str, dir_str=args.dir_str)
