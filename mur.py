@@ -35,7 +35,7 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     #W = inimat['W_ini']
     #H = inimat['H_ini']
 
-    WdotH = np.dot(W,H) 
+    WdotH = np.dot(W,H)
     if kl:
         print('Using Kullback-Leibler divergence.')
         objhistory = [mur.funcs.dist_kl(X,WdotH)]
