@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import scipy.io as sio
 import mur_funcs
+from misc import loadme
 
 def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         dir_str="./results/", file_str="nmf_default" ):
@@ -91,7 +92,10 @@ if __name__ == '__main__':
 
     #Parsing arguments
     p = argparse.ArgumentParser()
+    #File loading MSOT
     p.add_argument('-f', default='', type=str, dest='file_name')
+    #File loading MAT
+    p.add_argument('-v', default='LOAD_MSOT', type=str, dest='var_name')
     p.add_argument('-k', default=1, type=int)
     p.add_argument('-kl', action='store_true')
     p.add_argument('-i', default=100000, type=int, dest='maxiter')
@@ -105,8 +109,12 @@ if __name__ == '__main__':
     k = args.k
 
     # loading data from file
-    X = np.fromfile(args.file_name, np.float32)
-    X = np.reshape(X, (332*332*79, 9), order='F')
+    if args.var_name == 'LOAD_MSOT':
+        #X = np.fromfile(args.file_name, np.float32)
+        #X = np.reshape(X, (332*332*79, 9), order='F')
+        X = loadme.msot(args.file_name)
+    else:
+        X = loadme.mat(args.file_name, args.var_name)
 
     # call function
     mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
