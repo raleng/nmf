@@ -83,6 +83,9 @@ def mur( X, k, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
             print('Results saved in ' + savestr)
             break
 
+        if i%100 == 0:
+            print('Saved on iteration ' + str(i) + ' in ' + savestr)
+
 if __name__ == '__main__':
     # mur.py executed as script
 
