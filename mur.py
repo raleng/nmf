@@ -114,7 +114,7 @@ if __name__ == '__main__':
         #X = np.reshape(X, (332*332*79, 9), order='F')
         X = loadme.msot(args.file_name)
     else:
-        X = loadme.mat(args.file_name, args.var_name)
+        X = loadme.pet(args.file_name, args.var_name)
 
     # call function
     mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
