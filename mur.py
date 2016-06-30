@@ -115,6 +115,9 @@ if __name__ == '__main__':
         X = loadme.msot(args.file_name)
     else:
         X = loadme.pet(args.file_name, args.var_name)
+        if len(X.shape) == 3:
+            X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
+            print('Data was 3D. Reshaped to 2D.')
 
     # call function
     mur( X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
