@@ -715,7 +715,7 @@ static PyObject *__pyx_codeobj__8;
 /* "mur_funcs.pyx":3
  * import numpy as np
  * 
- * def dist_euclid(X,WdotH):             # <<<<<<<<<<<<<<
+ * def dist_euclid(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Euclidian distance"""
  *     value = 0.5 * np.sum( (X - WdotH)**2 )
  */
@@ -792,7 +792,7 @@ static PyObject *__pyx_pf_9mur_funcs_dist_euclid(CYTHON_UNUSED PyObject *__pyx_s
   __Pyx_RefNannySetupContext("dist_euclid", 0);
 
   /* "mur_funcs.pyx":5
- * def dist_euclid(X,WdotH):
+ * def dist_euclid(X, WdotH):
  *     """Euclidian distance"""
  *     value = 0.5 * np.sum( (X - WdotH)**2 )             # <<<<<<<<<<<<<<
  *     return value
@@ -845,7 +845,7 @@ static PyObject *__pyx_pf_9mur_funcs_dist_euclid(CYTHON_UNUSED PyObject *__pyx_s
  *     value = 0.5 * np.sum( (X - WdotH)**2 )
  *     return value             # <<<<<<<<<<<<<<
  * 
- * def dist_kl( X, WdotH ):
+ * def dist_kl(X, WdotH):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_v_value);
@@ -855,7 +855,7 @@ static PyObject *__pyx_pf_9mur_funcs_dist_euclid(CYTHON_UNUSED PyObject *__pyx_s
   /* "mur_funcs.pyx":3
  * import numpy as np
  * 
- * def dist_euclid(X,WdotH):             # <<<<<<<<<<<<<<
+ * def dist_euclid(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Euclidian distance"""
  *     value = 0.5 * np.sum( (X - WdotH)**2 )
  */
@@ -879,7 +879,7 @@ static PyObject *__pyx_pf_9mur_funcs_dist_euclid(CYTHON_UNUSED PyObject *__pyx_s
 /* "mur_funcs.pyx":8
  *     return value
  * 
- * def dist_kl( X, WdotH ):             # <<<<<<<<<<<<<<
+ * def dist_kl(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Kullback-Leibler divergence"""
  *     value = X * np.log( X / WdotH )
  */
@@ -956,7 +956,7 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
   __Pyx_RefNannySetupContext("dist_kl", 0);
 
   /* "mur_funcs.pyx":10
- * def dist_kl( X, WdotH ):
+ * def dist_kl(X, WdotH):
  *     """Kullback-Leibler divergence"""
  *     value = X * np.log( X / WdotH )             # <<<<<<<<<<<<<<
  *     #value(~isfinite(value))=0
@@ -1052,7 +1052,7 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
  *     value = np.sum( value - X + WdotH )
  *     return value             # <<<<<<<<<<<<<<
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_v_value);
@@ -1062,7 +1062,7 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
   /* "mur_funcs.pyx":8
  *     return value
  * 
- * def dist_kl( X, WdotH ):             # <<<<<<<<<<<<<<
+ * def dist_kl(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Kullback-Leibler divergence"""
  *     value = X * np.log( X / WdotH )
  */
@@ -1086,7 +1086,7 @@ static PyObject *__pyx_pf_9mur_funcs_2dist_kl(CYTHON_UNUSED PyObject *__pyx_self
 /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):             # <<<<<<<<<<<<<<
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
@@ -1195,7 +1195,7 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
 
   /* "mur_funcs.pyx":16
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)             # <<<<<<<<<<<<<<
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  *     return W, H
@@ -1320,7 +1320,7 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   __pyx_t_9 = 0;
 
   /* "mur_funcs.pyx":17
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)             # <<<<<<<<<<<<<<
  *     return W, H
@@ -1450,7 +1450,7 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  *     return W, H             # <<<<<<<<<<<<<<
  * 
- * def WH_update_kl(X,W,H):
+ * def WH_update_kl(X, W, H):
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
@@ -1468,7 +1468,7 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):             # <<<<<<<<<<<<<<
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
@@ -1496,7 +1496,7 @@ static PyObject *__pyx_pf_9mur_funcs_4WH_update_euclid(CYTHON_UNUSED PyObject *_
 /* "mur_funcs.pyx":20
  *     return W, H
  * 
- * def WH_update_kl(X,W,H):             # <<<<<<<<<<<<<<
+ * def WH_update_kl(X, W, H):             # <<<<<<<<<<<<<<
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
  */
@@ -1586,7 +1586,7 @@ static PyObject *__pyx_pf_9mur_funcs_6WH_update_kl(CYTHON_UNUSED PyObject *__pyx
 
   /* "mur_funcs.pyx":21
  * 
- * def WH_update_kl(X,W,H):
+ * def WH_update_kl(X, W, H):
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )             # <<<<<<<<<<<<<<
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
  *     return W, H
@@ -1706,7 +1706,7 @@ static PyObject *__pyx_pf_9mur_funcs_6WH_update_kl(CYTHON_UNUSED PyObject *__pyx
   __pyx_t_3 = 0;
 
   /* "mur_funcs.pyx":22
- * def WH_update_kl(X,W,H):
+ * def WH_update_kl(X, W, H):
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )             # <<<<<<<<<<<<<<
  *     return W, H
@@ -1847,7 +1847,7 @@ static PyObject *__pyx_pf_9mur_funcs_6WH_update_kl(CYTHON_UNUSED PyObject *__pyx
   /* "mur_funcs.pyx":20
  *     return W, H
  * 
- * def WH_update_kl(X,W,H):             # <<<<<<<<<<<<<<
+ * def WH_update_kl(X, W, H):             # <<<<<<<<<<<<<<
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
  */
@@ -1929,7 +1929,7 @@ static int __Pyx_InitCachedConstants(void) {
   /* "mur_funcs.pyx":3
  * import numpy as np
  * 
- * def dist_euclid(X,WdotH):             # <<<<<<<<<<<<<<
+ * def dist_euclid(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Euclidian distance"""
  *     value = 0.5 * np.sum( (X - WdotH)**2 )
  */
@@ -1941,7 +1941,7 @@ static int __Pyx_InitCachedConstants(void) {
   /* "mur_funcs.pyx":8
  *     return value
  * 
- * def dist_kl( X, WdotH ):             # <<<<<<<<<<<<<<
+ * def dist_kl(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Kullback-Leibler divergence"""
  *     value = X * np.log( X / WdotH )
  */
@@ -1953,7 +1953,7 @@ static int __Pyx_InitCachedConstants(void) {
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):             # <<<<<<<<<<<<<<
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
@@ -1965,7 +1965,7 @@ static int __Pyx_InitCachedConstants(void) {
   /* "mur_funcs.pyx":20
  *     return W, H
  * 
- * def WH_update_kl(X,W,H):             # <<<<<<<<<<<<<<
+ * def WH_update_kl(X, W, H):             # <<<<<<<<<<<<<<
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
  */
@@ -2087,7 +2087,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":1
  * import numpy as np             # <<<<<<<<<<<<<<
  * 
- * def dist_euclid(X,WdotH):
+ * def dist_euclid(X, WdotH):
  */
   __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -2097,7 +2097,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":3
  * import numpy as np
  * 
- * def dist_euclid(X,WdotH):             # <<<<<<<<<<<<<<
+ * def dist_euclid(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Euclidian distance"""
  *     value = 0.5 * np.sum( (X - WdotH)**2 )
  */
@@ -2109,7 +2109,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":8
  *     return value
  * 
- * def dist_kl( X, WdotH ):             # <<<<<<<<<<<<<<
+ * def dist_kl(X, WdotH):             # <<<<<<<<<<<<<<
  *     """Kullback-Leibler divergence"""
  *     value = X * np.log( X / WdotH )
  */
@@ -2121,7 +2121,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":15
  *     return value
  * 
- * def WH_update_euclid(X,W,H,alpha_W,alpha_H):             # <<<<<<<<<<<<<<
+ * def WH_update_euclid(X, W, H, alpha_W, alpha_H):             # <<<<<<<<<<<<<<
  *     H = H * np.dot( W.T, X ) / ( np.dot( W.T, np.dot(W,H) ) + alpha_H*H + 1e-9)
  *     W = W * np.dot( X, H.T ) / ( np.dot( W, np.dot(H,H.T) ) + alpha_W*W + 1e-9)
  */
@@ -2133,7 +2133,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":20
  *     return W, H
  * 
- * def WH_update_kl(X,W,H):             # <<<<<<<<<<<<<<
+ * def WH_update_kl(X, W, H):             # <<<<<<<<<<<<<<
  *     H = H * ( np.dot(W.T, X/( np.dot(W,H)+1e-9 ) ) / np.sum(W,0) )
  *     W = W * ( np.dot(H, (X/(np.dot(W,H)+1e-9 )).T / np.sum(H,1) ) )
  */
@@ -2145,7 +2145,7 @@ PyMODINIT_FUNC PyInit_mur_funcs(void)
   /* "mur_funcs.pyx":1
  * import numpy as np             # <<<<<<<<<<<<<<
  * 
- * def dist_euclid(X,WdotH):
+ * def dist_euclid(X, WdotH):
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
