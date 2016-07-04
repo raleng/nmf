@@ -3,6 +3,7 @@
 *.swp
 # results folder
 results
+matmul_test
 # symbolic link
 data
 
