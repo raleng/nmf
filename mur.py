@@ -22,7 +22,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     #savestr = './results/delme2'
     if np.min(X) < 0:
         X = X + abs(np.min(X))
-        print('Daten werden hochgesetzt.')
+        print('Data elevated.')
 
     X = X/np.max(X[:])
 
@@ -58,8 +58,8 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
             W, H = mur_funcs.WH_update_euclid(X, W, H, alpha_W, alpha_H)
 
         norms = np.sqrt(np.sum(H.T**2, 0))
-        H = H/norms[:, None]
-        W = W*norms
+        H = H / norms[:, None]
+        W = W * norms
         WdotH = np.dot(W, H)
         if kl:
             newobj = mur_funcs.dist_kl(X, W, H)
@@ -72,14 +72,14 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 
         #Konvergenzkriterium 1
         if newobj < tol:
-            print('Algorithmus konvergiert (1)')
+            print('Algorithm converged (1)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             print('Results saved in ' + savestr)
             break
 
         #Konvergenzkriterium 2
         if newobj >= begobj-s:
-            print('Algorithmus konvergiert (2)')
+            print('Algorithm converged (2)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             print('Results saved in ' + savestr)
             break
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     #Parsing arguments
     p = argparse.ArgumentParser()
-    
+
     #File loading MSOT (don't use -v)
     p.add_argument('-f', default='', type=str, dest='file_name')
     #File loading MAT (use -f AND -v)
@@ -109,7 +109,6 @@ if __name__ == '__main__':
     p.add_argument('--dir-str', default='./results/', type=str,
                    dest='dir_str')
     args = p.parse_args()
-    k = args.k
 
     # loading data from file
     if args.var_name == 'LOAD_MSOT':
@@ -123,5 +122,5 @@ if __name__ == '__main__':
             print('Data was 3D. Reshaped to 2D.')
 
     # call function
-    mur(X, k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
+    mur(X, args.k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
         alpha_H=args.alpha_H, file_str=args.file_str, dir_str=args.dir_str)
