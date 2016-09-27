@@ -17,9 +17,10 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     #Parameters
     tol = 1e-3
     s = 1e-3
-    savestr = dir_str + file_str + '_' + str(k) + '_' + ('KL' if kl else 'EU')
+    savestr = '{}{}_{}_{}'.format(dir_str, file_str, k, ('KL' if kl else 'EU'))
     #savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
     #savestr = './results/delme2'
+
     if np.min(X) < 0:
         X = X + abs(np.min(X))
         print('Data elevated.')
@@ -50,7 +51,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 
         if (i==maxiter-1):
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Max iteration. Results saved in ' + savestr)
+            print('Max iteration. Results saved in {}'.format(savestr))
 
         if kl:
             W, H = mur_funcs.WH_update_kl(X, W, H)
@@ -64,29 +65,28 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         if kl:
             newobj = mur_funcs.dist_kl(X, W, H)
         else:
-            #newobj = dist_euclid(X,WdotH)
             newobj = mur_funcs.dist_euclid(X, WdotH)
 
-        print('[' + str(i) + ']: ' + str(newobj))
+        print('[{}]: {}'.format(i, newobj))
         objhistory.append(newobj)
 
         #Konvergenzkriterium 1
         if newobj < tol:
             print('Algorithm converged (1)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Results saved in ' + savestr)
+            print('Results saved in {}'.format(savestr))
             break
 
         #Konvergenzkriterium 2
         if newobj >= begobj-s:
             print('Algorithm converged (2)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Results saved in ' + savestr)
+            print('Results saved in {}'.format(savestr))
             break
 
         if i%100 == 0:
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Saved on iteration ' + str(i) + ' in ' + savestr)
+            print('Saved on iteration {} in {}'.format(i, savestr))
 
 if __name__ == '__main__':
     # mur.py executed as script
