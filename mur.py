@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-
-import argparse
+import begin
+import logging
 import numpy as np
 import scipy.io as sio
 import mur_funcs
 from misc import loadme
 
 def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
-        dir_str="./results/", file_str="nmf_default"):
+        save_dir="./results/", save_file="nmf_default"):
     """ NMF with MUR
 
     Expects following arguments:
@@ -23,7 +23,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 
     if np.min(X) < 0:
         X = X + abs(np.min(X))
-        print('Data elevated.')
+        logging.info('Data elevated.')
 
     X = X/np.max(X[:])
 
@@ -39,10 +39,10 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 
     WdotH = np.dot(W,H)
     if kl:
-        print('Using Kullback-Leibler divergence.')
+        logging.info('Using Kullback-Leibler divergence.')
         objhistory = [mur.funcs.dist_kl(X, WdotH)]
     else:
-        print('Using euclidian distance.')
+        logging.info('Using euclidian distance.')
         #objhistory = [dist_euclid(X,WdotH)]
         objhistory = [mur_funcs.dist_euclid(X, WdotH)]
 
@@ -51,7 +51,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 
         if (i==maxiter-1):
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Max iteration. Results saved in {}'.format(savestr))
+            logging.warning('Max iteration. Results saved in {}'.format(savestr))
 
         if kl:
             W, H = mur_funcs.WH_update_kl(X, W, H)
@@ -67,60 +67,48 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         else:
             newobj = mur_funcs.dist_euclid(X, WdotH)
 
-        print('[{}]: {}'.format(i, newobj))
+        logging.info('[{}]: {}'.format(i, newobj))
         objhistory.append(newobj)
 
         #Konvergenzkriterium 1
         if newobj < tol:
-            print('Algorithm converged (1)')
+            logging.warning('Algorithm converged (1)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Results saved in {}'.format(savestr))
+            logging.warning('Results saved in {}'.format(savestr))
             break
 
         #Konvergenzkriterium 2
         if newobj >= begobj-s:
-            print('Algorithm converged (2)')
+            logging.warning('Algorithm converged (2)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Results saved in {}'.format(savestr))
+            logging.warning('Results saved in {}'.format(savestr))
             break
 
         if i%100 == 0:
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
-            print('Saved on iteration {} in {}'.format(i, savestr))
+            logging.warning('Saved on iteration {} in {}'.format(i, savestr))
 
-if __name__ == '__main__':
-    # mur.py executed as script
+@begin.start(auto_convert=True, lexical_order=True, short_args=False)
+@begin.logging
+def main(
+        load_file='', 
+        load_var='LOAD_MSOT', 
+        features=1, 
+        kl=False,
+        alpha_W=0, 
+        alpha_H=0, 
+        maxiter=100000,
+        save_file='nmf_default', 
+        save_dir='./results/',
+        ):
 
-    #Parsing arguments
-    p = argparse.ArgumentParser()
-
-    #File loading MSOT (don't use -v)
-    p.add_argument('-f', default='', type=str, dest='file_name')
-    #File loading MAT (use -f AND -v)
-    p.add_argument('-v', default='LOAD_MSOT', type=str, dest='var_name')
-
-    p.add_argument('-k', default=1, type=int)
-    p.add_argument('-kl', action='store_true')
-    p.add_argument('-i', default=100000, type=int, dest='maxiter')
-    p.add_argument('-aW', default=0, type=float, dest='alpha_W')
-    p.add_argument('-aH', default=0, type=float, dest='alpha_H')
-    p.add_argument('--file-str', default='nmf_default', type=str,
-                   dest='file_str')
-    p.add_argument('--dir-str', default='./results/', type=str,
-                   dest='dir_str')
-    args = p.parse_args()
-
-    # loading data from file
-    if args.var_name == 'LOAD_MSOT':
-        #X = np.fromfile(args.file_name, np.float32)
-        #X = np.reshape(X, (332*332*79, 9), order='F')
-        X = loadme.msot(args.file_name)
+    if var_name == 'LOAD_MSOT':
+        X = loadme.msot(load_file)
     else:
-        X = loadme.pet(args.file_name, args.var_name)
+        X = loadme.pet(load_file, load_var)
         if len(X.shape) == 3:
             X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
-            print('Data was 3D. Reshaped to 2D.')
-
-    # call function
-    mur(X, args.k, kl=args.kl, maxiter=args.maxiter, alpha_W=args.alpha_W,
-        alpha_H=args.alpha_H, file_str=args.file_str, dir_str=args.dir_str)
+            logging.info('Data was 3D. Reshaped to 2D.')
+    
+    mur(X, k=features, kl=kl, maxiter=maxiter, alpha_W=alpha_W,
+        alpha_H=alpha_H, save_dir=save_dir, save_file=save_file) 
