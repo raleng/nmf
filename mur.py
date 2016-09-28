@@ -17,7 +17,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     #Parameters
     tol = 1e-3
     s = 1e-3
-    savestr = '{}{}_{}_{}'.format(dir_str, file_str, k, ('KL' if kl else 'EU'))
+    savestr = '{}{}_{}_{}'.format(save_dir, save_file, k, ('KL' if kl else 'EU'))
     #savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
     #savestr = './results/delme2'
 
@@ -91,14 +91,14 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
 @begin.start(auto_convert=True, lexical_order=True, short_args=False)
 @begin.logging
 def main(
-        load_file='', 
-        load_var='LOAD_MSOT', 
-        features=1, 
+        load_file='',
+        load_var='LOAD_MSOT',
+        features=1,
         kl=False,
-        alpha_W=0, 
-        alpha_H=0, 
+        alpha_W=0,
+        alpha_H=0,
         maxiter=100000,
-        save_file='nmf_default', 
+        save_file='nmf_default',
         save_dir='./results/',
         ):
 
@@ -109,6 +109,6 @@ def main(
         if len(X.shape) == 3:
             X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
             logging.info('Data was 3D. Reshaped to 2D.')
-    
+
     mur(X, k=features, kl=kl, maxiter=maxiter, alpha_W=alpha_W,
-        alpha_H=alpha_H, save_dir=save_dir, save_file=save_file) 
+        alpha_H=alpha_H, save_dir=save_dir, save_file=save_file)
