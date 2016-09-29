@@ -40,7 +40,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     WdotH = np.dot(W,H)
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
-        objhistory = [mur.funcs.dist_kl(X, WdotH)]
+        objhistory = [mur_funcs.dist_kl(X, WdotH)]
     else:
         logging.info('Using euclidian distance.')
         #objhistory = [dist_euclid(X,WdotH)]
@@ -63,7 +63,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         W = W * norms
         WdotH = np.dot(W, H)
         if kl:
-            newobj = mur_funcs.dist_kl(X, W, H)
+            newobj = mur_funcs.dist_kl(X, WdotH)
         else:
             newobj = mur_funcs.dist_euclid(X, WdotH)
 
@@ -102,7 +102,7 @@ def main(
         save_dir='./results/',
         ):
 
-    if var_name == 'LOAD_MSOT':
+    if load_var == 'LOAD_MSOT':
         X = loadme.msot(load_file)
     else:
         X = loadme.pet(load_file, load_var)
