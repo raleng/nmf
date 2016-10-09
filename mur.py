@@ -62,6 +62,7 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         H = H / norms[:, None]
         W = W * norms
         WdotH = np.dot(W, H)
+
         if kl:
             newobj = mur_funcs.dist_kl(X, WdotH)
         else:

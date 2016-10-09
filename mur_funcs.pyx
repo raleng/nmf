@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 
 def dist_euclid(X, WdotH):
     """Euclidian distance"""
@@ -8,7 +9,7 @@ def dist_euclid(X, WdotH):
 def dist_kl(X, WdotH):
     """Kullback-Leibler divergence"""
     value = X * np.log( X / WdotH )
-    #value(~isfinite(value))=0
+    value = np.where(np.isinf(value), 0, value)
     value = np.sum( value - X + WdotH )
     return value
 
