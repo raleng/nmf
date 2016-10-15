@@ -3,8 +3,29 @@ import begin
 import logging
 import numpy as np
 import scipy.io as sio
-import mur_funcs
 from misc import loadme
+
+def dist_euclid(X, WdotH):
+    """Euclidian distance"""
+    value = 0.5 * np.sum( (X - WdotH)**2 )
+    return value
+
+def dist_kl(X, WdotH):
+    """Kullback-Leibler divergence"""
+    value = X * np.log( X / WdotH )
+    value = np.where(np.isinf(value), 0, value)
+    value = np.sum( value - X + WdotH )
+    return value
+
+def WH_update_euclid(X, W, H, WdotH, alpha_W, alpha_H):
+    H = H * ( W.T @ X ) / ( W.T @ ( WdotH ) + alpha_H * H + 1e-9 )
+    W = W * ( X @ H.T ) / ( W @ ( H @ H.T ) + alpha_W * W + 1e-9 )
+    return W, H
+
+def WH_update_kl(X, W, H, WdotH):
+    H = H * ((W.T @ (X / ((WdotH) + 1e-9))) / np.sum(W, 0)[:, np.newaxis])
+    W = W * (H @ (X / ((WdotH) + 1e-9)).T / np.sum(H, 1)[:, np.newaxis]).T
+    return W, H
 
 def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
         save_dir="./results/", save_file="nmf_default"):
@@ -15,11 +36,11 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     k -- number of components
     """
     #Parameters
-    tol = 1e-3
-    s = 1e-3
+    tol = 1e-1
+    tol_precision = len(str(tol)) if tol < 1 else 0
+    #s = 1e-3
+    s = tol
     savestr = '{}{}_{}_{}'.format(save_dir, save_file, k, ('KL' if kl else 'EU'))
-    #savestr = './results/nmf_mur_' + str(k) + '_' + str(kl)
-    #savestr = './results/delme2'
 
     if np.min(X) < 0:
         X = X + abs(np.min(X))
@@ -37,14 +58,13 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     #W = inimat['W_ini']
     #H = inimat['H_ini']
 
-    WdotH = np.dot(W,H)
+    WdotH = W @ H
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
-        objhistory = [mur_funcs.dist_kl(X, WdotH)]
+        objhistory = [dist_kl(X, WdotH)]
     else:
         logging.info('Using euclidian distance.')
-        #objhistory = [dist_euclid(X,WdotH)]
-        objhistory = [mur_funcs.dist_euclid(X, WdotH)]
+        objhistory = [dist_euclid(X, WdotH)]
 
     for i in range(maxiter):
         begobj = objhistory[-1]
@@ -54,21 +74,21 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
             logging.warning('Max iteration. Results saved in {}'.format(savestr))
 
         if kl:
-            W, H = mur_funcs.WH_update_kl(X, W, H)
+            W, H = WH_update_kl(X, W, H, WdotH)
         else:
-            W, H = mur_funcs.WH_update_euclid(X, W, H, alpha_W, alpha_H)
+            W, H = WH_update_euclid(X, W, H, WdotH, alpha_W, alpha_H)
 
         norms = np.sqrt(np.sum(H.T**2, 0))
         H = H / norms[:, None]
         W = W * norms
-        WdotH = np.dot(W, H)
+        WdotH = W @ H
 
         if kl:
-            newobj = mur_funcs.dist_kl(X, WdotH)
+            newobj = dist_kl(X, WdotH)
         else:
-            newobj = mur_funcs.dist_euclid(X, WdotH)
+            newobj = dist_euclid(X, WdotH)
 
-        logging.info('[{}]: {}'.format(i, newobj))
+        logging.info('[{}]: {:.{}f}'.format(i, newobj, tol_precision))
         objhistory.append(newobj)
 
         #Konvergenzkriterium 1
