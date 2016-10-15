@@ -27,7 +27,7 @@ def WH_update_kl(X, W, H, WdotH):
     W = W * (H @ (X / ((WdotH) + 1e-9)).T / np.sum(H, 1)[:, np.newaxis]).T
     return W, H
 
-def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
+def mur(X, k, *, kl=False, maxiter=100000, tol=1e-3, s=1e-3, alpha_W=0, alpha_H=0,
         save_dir="./results/", save_file="nmf_default"):
     """ NMF with MUR
 
@@ -35,11 +35,8 @@ def mur(X, k, *, kl=False, maxiter=100000, alpha_W=0, alpha_H=0,
     X -- 2D Data
     k -- number of components
     """
-    #Parameters
-    tol = 1e-1
     tol_precision = len(str(tol)) if tol < 1 else 0
-    #s = 1e-3
-    s = tol
+
     savestr = '{}{}_{}_{}'.format(save_dir, save_file, k, ('KL' if kl else 'EU'))
 
     if np.min(X) < 0:
@@ -116,9 +113,11 @@ def main(
         load_var='LOAD_MSOT',
         features=1,
         kl=False,
+        maxiter=100000,
+        tol=1e-3,
+        s=1e-3,
         alpha_W=0,
         alpha_H=0,
-        maxiter=100000,
         save_file='nmf_default',
         save_dir='./results/',
         ):
@@ -131,5 +130,5 @@ def main(
             X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
             logging.info('Data was 3D. Reshaped to 2D.')
 
-    mur(X, k=features, kl=kl, maxiter=maxiter, alpha_W=alpha_W,
+    mur(X, k=features, kl=kl, maxiter=maxiter, tol=tol, s=s, alpha_W=alpha_W,
         alpha_H=alpha_H, save_dir=save_dir, save_file=save_file)
