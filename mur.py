@@ -7,27 +7,29 @@ from misc import loadme
 
 def dist_euclid(X, WdotH):
     """Euclidian distance"""
-    value = 0.5 * np.sum( (X - WdotH)**2 )
+    value = 0.5 * np.sum((X - WdotH)**2)
     return value
 
 def dist_kl(X, WdotH):
     """Kullback-Leibler divergence"""
-    value = X * np.log( X / WdotH )
+    value = X * np.log(X / WdotH)
     value = np.where(np.isinf(value), 0, value)
-    value = np.sum( value - X + WdotH )
+    value = np.sum(value - X + WdotH)
     return value
 
 def WH_update_euclid(X, W, H, WdotH, alpha_W, alpha_H):
-    H = H * ( W.T @ X ) / ( W.T @ ( WdotH ) + alpha_H * H + 1e-9 )
-    W = W * ( X @ H.T ) / ( W @ ( H @ H.T ) + alpha_W * W + 1e-9 )
+    """MUR Update with euclidian distance"""
+    H = H * (W.T @ X) / (W.T @ WdotH + alpha_H * H + 1e-9)
+    W = W * (X @ H.T) / (W @ (H @ H.T) + alpha_W * W + 1e-9)
     return W, H
 
 def WH_update_kl(X, W, H, WdotH):
-    H = H * ((W.T @ (X / ((WdotH) + 1e-9))) / np.sum(W, 0)[:, np.newaxis])
-    W = W * (H @ (X / ((WdotH) + 1e-9)).T / np.sum(H, 1)[:, np.newaxis]).T
+    """MUR Update with Kullback-Leibler divergence"""
+    H = H * ((W.T @ (X / (WdotH + 1e-9))) / np.sum(W, 0)[:, np.newaxis])
+    W = W * (H @ (X / (WdotH + 1e-9)).T / np.sum(H, 1)[:, np.newaxis]).T
     return W, H
 
-def mur(X, k, *, kl=False, maxiter=100000, tol=1e-3, s=1e-3, alpha_W=0, alpha_H=0,
+def mur(X, k, *, kl=False, maxiter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0, alpha_H=0,
         save_dir="./results/", save_file="nmf_default"):
     """ NMF with MUR
 
@@ -35,19 +37,26 @@ def mur(X, k, *, kl=False, maxiter=100000, tol=1e-3, s=1e-3, alpha_W=0, alpha_H=
     X -- 2D Data
     k -- number of components
     """
+
+    # used for cmd line output; only show reasonable amount of decimal places
+    tol = min(tol1, tol2)
     tol_precision = len(str(tol)) if tol < 1 else 0
 
     savestr = '{}{}_{}_{}'.format(save_dir, save_file, k, ('KL' if kl else 'EU'))
 
+    # make sure data is positive; should be anyways but data could contain small
+    # negative numbers due to rounding errors and such
     if np.min(X) < 0:
         X = X + abs(np.min(X))
         logging.info('Data elevated.')
 
+    # normalizing
     X = X/np.max(X[:])
 
     xdim = X.shape[0]
     samples = X.shape[1]
 
+    # initializing W and H with random matrices
     W = np.abs(np.random.randn(xdim, k))
     H = np.abs(np.random.randn(k, samples))
     #print('Loading initial matrices.')
@@ -70,6 +79,7 @@ def mur(X, k, *, kl=False, maxiter=100000, tol=1e-3, s=1e-3, alpha_W=0, alpha_H=
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             logging.warning('Max iteration. Results saved in {}'.format(savestr))
 
+        # Update step
         if kl:
             W, H = WH_update_kl(X, W, H, WdotH)
         else:
@@ -88,20 +98,21 @@ def mur(X, k, *, kl=False, maxiter=100000, tol=1e-3, s=1e-3, alpha_W=0, alpha_H=
         logging.info('[{}]: {:.{}f}'.format(i, newobj, tol_precision))
         objhistory.append(newobj)
 
-        #Konvergenzkriterium 1
-        if newobj < tol:
+        # Convergence criterium 1
+        if newobj < tol1:
             logging.warning('Algorithm converged (1)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             logging.warning('Results saved in {}'.format(savestr))
             break
 
-        #Konvergenzkriterium 2
-        if newobj >= begobj-s:
+        # Convergence criterium 2
+        if newobj >= begobj-tol2:
             logging.warning('Algorithm converged (2)')
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             logging.warning('Results saved in {}'.format(savestr))
             break
 
+        # save every XX iterations
         if i%100 == 0:
             np.savez(savestr, W=W, H=H, i=i, objhistory=objhistory)
             logging.warning('Saved on iteration {} in {}'.format(i, savestr))
@@ -114,8 +125,8 @@ def main(
         features=1,
         kl=False,
         maxiter=100000,
-        tol=1e-3,
-        s=1e-3,
+        tol1=1e-3,
+        tol2=1e-3,
         alpha_W=0,
         alpha_H=0,
         save_file='nmf_default',
@@ -130,5 +141,5 @@ def main(
             X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
             logging.info('Data was 3D. Reshaped to 2D.')
 
-    mur(X, k=features, kl=kl, maxiter=maxiter, tol=tol, s=s, alpha_W=alpha_W,
+    mur(X, k=features, kl=kl, maxiter=maxiter, tol1=tol1, tol2=tol2, alpha_W=alpha_W,
         alpha_H=alpha_H, save_dir=save_dir, save_file=save_file)
