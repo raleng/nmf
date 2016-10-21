@@ -36,6 +36,16 @@ def mur(X, k, *, kl=False, maxiter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0, alph
     Expects following arguments:
     X -- 2D Data
     k -- number of components
+
+    Accepts keyward arguments:
+    kl -- BOOL: if True, use Kullback Leibler, else Euclidian
+    maxiter -- INT: maximum number of iterations
+    tol1 -- FLOAT: convergence tolerance
+    tol2 -- FLOAT: convergence tolerance
+    alpha_W -- FLOAT: regularization parameter for W-Update
+    alpha_H -- FLOAT: regularization parameter for H-Update
+    save_dir -- STRING: folder to which to save
+    save_file -- STRING: file name to which to save
     """
 
     # used for cmd line output; only show reasonable amount of decimal places
@@ -132,7 +142,7 @@ def main(
         save_file='nmf_default',
         save_dir='./results/',
         ):
-
+    """ NMF with MUR """
     if load_var == 'LOAD_MSOT':
         X = loadme.msot(load_file)
     else:
