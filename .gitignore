@@ -9,6 +9,8 @@ matmul_test
 matmul
 # symbolic link
 data
+#pycharm
+.idea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
