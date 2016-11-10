@@ -2,8 +2,9 @@
 import begin
 import logging
 import numpy as np
-import scipy.io as sio
 from misc import loadme
+
+import params
 
 
 def dist_euclid(X, WdotH):
@@ -34,8 +35,8 @@ def WH_update_kl(X, W, H, WdotH):
     return W, H
 
 
-def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0, alpha_H=0,
-        save_dir="./results/", save_file="nmf_default"):
+def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0.0, alpha_H=0.0,
+        save_dir="./results/", save_file="nmf"):
     """ NMF with MUR
 
     Expects following arguments:
@@ -72,12 +73,10 @@ def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0, alp
     # normalizing
     X /= np.max(X[:])
 
-    xdim = X.shape[0]
-    samples = X.shape[1]
-
     # initializing W and H with random matrices
-    W = np.abs(np.random.randn(xdim, k))
-    H = np.abs(np.random.randn(k, samples))
+    W = np.abs(np.random.randn(X.shape[0], k))
+    H = np.abs(np.random.randn(k, X.shape[1]))
+
     # print('Loading initial matrices.')
     # inimat = sio.loadmat('/home/ralf/uni/data/msot-matlab/k4_ini.mat')
     # W = inimat['W_ini']
@@ -139,27 +138,28 @@ def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0, alp
 
 @begin.start(auto_convert=True, lexical_order=True, short_args=False)
 @begin.logging
-def main(load_file='',
-         load_var='LOAD_MSOT',
-         features=1,
-         kl=False,
-         max_iter=100000,
-         tol1=1e-3,
-         tol2=1e-3,
-         alpha_W=0.0,
-         alpha_H=0.0,
-         save_file='nmf_default',
-         save_dir='./results/',
-         ):
-
+def main():
     """ NMF with MUR """
-    if load_var == 'LOAD_MSOT':
-        X = loadme.msot(load_file)
-    else:
-        X = loadme.pet(load_file, load_var)
-        if len(X.shape) == 3:
-            X = np.reshape(X, (X.shape[0]*X.shape[1], X.shape[2]))
-            logging.info('Data was 3D. Reshaped to 2D.')
 
-    mur(X, features, kl=kl, max_iter=max_iter, tol1=tol1, tol2=tol2, alpha_W=alpha_W,
-        alpha_H=alpha_H, save_dir=save_dir, save_file=save_file)
+    if params.load_var == 'LOAD_MSOT':
+        data = loadme.msot(params.load_file)
+        logging.info('Loaded MSOT data.')
+    else:
+        data = loadme.pet(params.load_file, params.load_var)
+        logging.info('Loaded PET data.')
+
+    if data.ndim == 3:
+        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]))
+        logging.info('Data was 3D. Reshaped to 2D.')
+
+    mur(data,
+        params.features,
+        kl=params.kl,
+        max_iter=params.max_iter,
+        tol1=params.tol1,
+        tol2=params.tol2,
+        alpha_W=params.alpha_W,
+        alpha_H=params.alpha_H,
+        save_dir=params.save_dir,
+        save_file=params.save_file,
+        )
