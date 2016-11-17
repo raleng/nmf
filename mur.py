@@ -2,40 +2,40 @@
 import begin
 import logging
 import numpy as np
+from importlib import import_module
 from misc import loadme
+from os.path import isfile, join
 
-import params
 
-
-def dist_euclid(X, WdotH):
+def dist_euclid(x, wh):
     """Euclidean distance"""
-    value = 0.5 * np.sum((X - WdotH)**2)
+    value = 0.5 * np.sum((x - wh) ** 2)
     return value
 
 
-def dist_kl(X, WdotH):
+def dist_kl(x, wh):
     """Kullback-Leibler divergence"""
-    value = X * np.log(X / WdotH)
+    value = x * np.log(x / wh)
     value = np.where(np.isinf(value), 0, value)
-    value = np.sum(value - X + WdotH)
+    value = np.sum(value - x + wh)
     return value
 
 
-def WH_update_euclid(X, W, H, WdotH, alpha_W, alpha_H):
+def wh_update_euclid(x, w, h, wh, alpha_w, alpha_h):
     """MUR Update with euclidean distance"""
-    H = H * (W.T @ X) / (W.T @ WdotH + alpha_H * H + 1e-9)
-    W = W * (X @ H.T) / (W @ (H @ H.T) + alpha_W * W + 1e-9)
-    return W, H
+    h = h * (w.T @ x) / (w.T @ wh + alpha_h * h + 1e-9)
+    w = w * (x @ h.T) / (w @ (h @ h.T) + alpha_w * w + 1e-9)
+    return w, h
 
 
-def WH_update_kl(X, W, H, WdotH):
+def wh_update_kl(x, w, h, wh):
     """MUR Update with Kullback-Leibler divergence"""
-    H = H * ((W.T @ (X / (WdotH + 1e-9))) / np.sum(W, 0)[:, np.newaxis])
-    W = W * (H @ (X / (WdotH + 1e-9)).T / np.sum(H, 1)[:, np.newaxis]).T
-    return W, H
+    h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
+    w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
+    return w, h
 
 
-def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0.0, alpha_H=0.0,
+def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, alpha_h=0.0,
         save_dir="./results/", save_file="nmf"):
     """ NMF with MUR
 
@@ -48,8 +48,8 @@ def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0.0, a
     maxiter -- INT: maximum number of iterations
     tol1 -- FLOAT: convergence tolerance
     tol2 -- FLOAT: convergence tolerance
-    alpha_W -- FLOAT: regularization parameter for W-Update
-    alpha_H -- FLOAT: regularization parameter for H-Update
+    alpha_W -- FLOAT: regularization parameter for w-Update
+    alpha_H -- FLOAT: regularization parameter for h-Update
     save_dir -- STRING: folder to which to save
     save_file -- STRING: file name to which to save
     """
@@ -58,61 +58,64 @@ def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0.0, a
     tol = min(tol1, tol2)
     tol_precision = len(str(tol)) if tol < 1 else 0
 
-    save_str = '{dir}{file}_{k}_{dist}'.format(dir=save_dir,
-                                               file=save_file,
+    save_str = '{file_path}_{k}_{dist}'.format(file_path=join(save_dir, save_file),
                                                k=k,
                                                dist=('KL' if kl else 'EU'),
                                                )
 
     # make sure data is positive; should be anyways but data could contain small
     # negative numbers due to rounding errors and such
-    if np.min(X) < 0:
-        X += abs(np.min(X))
+    if np.min(x) < 0:
+        x += abs(np.min(x))
         logging.info('Data elevated.')
 
     # normalizing
-    X /= np.max(X[:])
+    x /= np.max(x[:])
 
-    # initializing W and H with random matrices
-    W = np.abs(np.random.randn(X.shape[0], k))
-    H = np.abs(np.random.randn(k, X.shape[1]))
+    # initializing w and h with random matrices
+    w = np.abs(np.random.randn(x.shape[0], k))
+    h = np.abs(np.random.randn(k, x.shape[1]))
 
     # print('Loading initial matrices.')
     # inimat = sio.loadmat('/home/ralf/uni/data/msot-matlab/k4_ini.mat')
-    # W = inimat['W_ini']
-    # H = inimat['H_ini']
+    # w = inimat['W_ini']
+    # h = inimat['H_ini']
 
-    WdotH = W @ H
+    wdoth = w @ h
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
-        obj_history = [dist_kl(X, WdotH)]
+        obj_history = [dist_kl(x, wdoth)]
     else:
         logging.info('Using euclidean distance.')
-        obj_history = [dist_euclid(X, WdotH)]
+        obj_history = [dist_euclid(x, wdoth)]
 
     for i in range(max_iter):
         old_obj = obj_history[-1]
 
         if i == max_iter-1:
-            np.savez(save_str, W=W, H=H, i=i, objhistory=obj_history)
+            np.savez(save_str, W=w, H=h, i=i, objhistory=obj_history)
             logging.warning('Max iteration. Results saved in {}'.format(save_str))
 
         # Update step
         if kl:
-            W, H = WH_update_kl(X, W, H, WdotH)
+            w, h = wh_update_kl(x, w, h, wdoth)
         else:
-            W, H = WH_update_euclid(X, W, H, WdotH, alpha_W, alpha_H)
+            w, h = wh_update_euclid(x, w, h, wdoth, alpha_w, alpha_h)
 
-        norms = np.sqrt(np.sum(H.T**2, 0))
-        H = H / norms[:, None]
-        W = W * norms
-        WdotH = W @ H
+        # normalization
+        norms = np.sqrt(np.sum(h.T**2, 0))
+        h = h / norms[:, None]
+        w = w * norms
 
+        wdoth = w @ h
+
+        # get new distance
         if kl:
-            new_obj = dist_kl(X, WdotH)
+            new_obj = dist_kl(x, wdoth)
         else:
-            new_obj = dist_euclid(X, WdotH)
+            new_obj = dist_euclid(x, wdoth)
 
+        # Iteration info
         logging.info('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
         obj_history.append(new_obj)
 
@@ -126,20 +129,26 @@ def mur(X, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_W=0.0, a
             break_true = False
 
         if break_true:
-            np.savez(save_str, W=W, H=H, i=i, obj_history=obj_history)
+            np.savez(save_str, W=w, H=h, i=i, obj_history=obj_history)
             logging.warning('Results saved in {}'.format(save_str))
             break
 
         # save every XX iterations
         if i % 100 == 0:
-            np.savez(save_str, W=W, H=H, i=i, obj_history=obj_history)
+            np.savez(save_str, W=w, H=h, i=i, obj_history=obj_history)
             logging.warning('Saved on iteration {} in {}'.format(i, save_str))
 
 
-@begin.start(auto_convert=True, lexical_order=True, short_args=False)
+@begin.start
 @begin.logging
-def main():
+def main(param_file='parameter_file'):
     """ NMF with MUR """
+
+    if isfile(param_file):
+        params = import_module(param_file)
+    else:
+        print('No parameter file found.')
+        return
 
     if params.load_var == 'LOAD_MSOT':
         data = loadme.msot(params.load_file)
@@ -158,8 +167,8 @@ def main():
         max_iter=params.max_iter,
         tol1=params.tol1,
         tol2=params.tol2,
-        alpha_W=params.alpha_W,
-        alpha_H=params.alpha_H,
+        alpha_w=params.alpha_w,
+        alpha_h=params.alpha_h,
         save_dir=params.save_dir,
         save_file=params.save_file,
         )
