@@ -1,4 +1,5 @@
 parameter_file
+misc
 # VIM swap/undo files
 *.un~
 *.swp
