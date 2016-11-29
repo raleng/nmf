@@ -81,39 +81,41 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
     # w = inimat['W_ini']
     # h = inimat['H_ini']
 
-    wdoth = w @ h
+    # w @ h is needed in several places
+    wh = w @ h
+
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
-        obj_history = [dist_kl(x, wdoth)]
+        obj_history = [dist_kl(x, wh)]
     else:
         logging.info('Using euclidean distance.')
-        obj_history = [dist_euclid(x, wdoth)]
+        obj_history = [dist_euclid(x, wh)]
 
     for i in range(max_iter):
         old_obj = obj_history[-1]
 
         if i == max_iter-1:
-            np.savez(save_str, W=w, H=h, i=i, objhistory=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history)
             logging.warning('Max iteration. Results saved in {}'.format(save_str))
 
         # Update step
         if kl:
-            w, h = wh_update_kl(x, w, h, wdoth)
+            w, h = wh_update_kl(x, w, h, wh)
         else:
-            w, h = wh_update_euclid(x, w, h, wdoth, alpha_w, alpha_h)
+            w, h = wh_update_euclid(x, w, h, wh, alpha_w, alpha_h)
 
         # normalization
         norms = np.sqrt(np.sum(h.T**2, 0))
         h = h / norms[:, None]
         w = w * norms
 
-        wdoth = w @ h
+        wh = w @ h
 
         # get new distance
         if kl:
-            new_obj = dist_kl(x, wdoth)
+            new_obj = dist_kl(x, wh)
         else:
-            new_obj = dist_euclid(x, wdoth)
+            new_obj = dist_euclid(x, wh)
 
         # Iteration info
         logging.info('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
@@ -129,13 +131,13 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
             break_true = False
 
         if break_true:
-            np.savez(save_str, W=w, H=h, i=i, obj_history=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history)
             logging.warning('Results saved in {}'.format(save_str))
             break
 
         # save every XX iterations
         if i % 100 == 0:
-            np.savez(save_str, W=w, H=h, i=i, obj_history=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history)
             logging.warning('Saved on iteration {} in {}'.format(i, save_str))
 
 
@@ -150,25 +152,33 @@ def main(param_file='parameter_file'):
         print('No parameter file found.')
         return
 
-    if params.load_var == 'LOAD_MSOT':
-        data = loadme.msot(params.load_file)
-        logging.info('Loaded MSOT data.')
-    else:
-        data = loadme.pet(params.load_file, params.load_var)
-        logging.info('Loaded PET data.')
+    try:
+        if params.load_var == 'LOAD_MSOT':
+            data = loadme.msot(params.load_file)
+            logging.info('Loaded MSOT data.')
+        else:
+            data = loadme.pet(params.load_file, params.load_var)
+            logging.info('Loaded PET data.')
+    except AttributeError:
+        print('No file/variable given.')
+        return
 
     if data.ndim == 3:
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]))
         logging.info('Data was 3D. Reshaped to 2D.')
 
-    mur(data,
-        params.features,
-        kl=params.kl,
-        max_iter=params.max_iter,
-        tol1=params.tol1,
-        tol2=params.tol2,
-        alpha_w=params.alpha_w,
-        alpha_h=params.alpha_h,
-        save_dir=params.save_dir,
-        save_file=params.save_file,
-        )
+    try:
+        mur(data,
+            params.features,
+            kl=params.kl,
+            max_iter=params.max_iter,
+            tol1=params.tol1,
+            tol2=params.tol2,
+            alpha_w=params.alpha_w,
+            alpha_h=params.alpha_h,
+            save_dir=params.save_dir,
+            save_file=params.save_file,
+            )
+    except NameError:
+        print('Parameter file incomplete.\n')
+        raise
