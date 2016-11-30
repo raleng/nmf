@@ -2,6 +2,7 @@
 import begin
 import logging
 import numpy as np
+import os
 from importlib import import_module
 from misc import loadme
 from os.path import isfile, join
@@ -54,9 +55,30 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
     save_file -- STRING: file name to which to save
     """
 
+    experiment_info = """
+                        k: {k}
+                        kl: {kl}
+                        max_iter: {max_iter}
+                        tol1: {tol1}
+                        tol2: {tol2}
+                        alpha_w: {alpha_w}
+                        alpha_h: {alpha_h}
+                      """.format(
+                              k=k,
+                              kl=kl,
+                              max_iter=max_iter,
+                              tol1=tol1,
+                              tol2=tol2,
+                              alpha_w=alpha_w,
+                              alpha_h=alpha_h,
+                              )
+
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
     tol_precision = len(str(tol)) if tol < 1 else 0
+
+    # create folder, if not existing
+    os.makedirs(save_dir, exist_ok=True)
 
     save_str = '{file_path}_{k}_{dist}'.format(file_path=join(save_dir, save_file),
                                                k=k,
@@ -95,7 +117,8 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
         old_obj = obj_history[-1]
 
         if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history,
+                    experiment_info=experiment_info)
             logging.warning('Max iteration. Results saved in {}'.format(save_str))
 
         # Update step
@@ -131,13 +154,15 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
             break_true = False
 
         if break_true:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                    experiment_info=experiment_info)
             logging.warning('Results saved in {}'.format(save_str))
             break
 
         # save every XX iterations
         if i % 100 == 0:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history)
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                    experiment_info=experiment_info)
             logging.warning('Saved on iteration {} in {}'.format(i, save_str))
 
 
@@ -146,9 +171,9 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
 def main(param_file='parameter_file'):
     """ NMF with MUR """
 
-    if isfile(param_file):
+    try:
         params = import_module(param_file)
-    else:
+    except:
         print('No parameter file found.')
         return
 
