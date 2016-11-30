@@ -1,4 +1,4 @@
-parameter_file
+parameter_file.py
 misc
 # VIM swap/undo files
 *.un~
