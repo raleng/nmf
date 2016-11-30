@@ -1,0 +1,25 @@
+# NMF Variables
+features = 3
+kl = False
+
+# Iteration/Algorithm Variables
+max_iter = 100000
+tol1 = 1e-3
+tol2 = 1e-3
+alpha_w = 0.0
+alpha_h = 0.0
+
+# File handling
+f_name = 'phantom2'
+load_file = 'data/pet-matlab/{}.mat'.format(f_name)
+load_var = 'uexact'
+
+save_dir = './results/{}'.format(f_name)
+save_file = 'nmf_{feat}_{kl}_{tol1}_{tol2}_{aw}_{ah}'.format(
+    feat=features,
+    kl='KL' if kl else 'EU',
+    tol1=tol1,
+    tol2=tol2,
+    aw=alpha_w,
+    ah=alpha_h,
+)
