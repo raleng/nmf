@@ -17,7 +17,7 @@ def dist_euclid(x, wh):
 def dist_kl(x, wh):
     """Kullback-Leibler divergence"""
     value = x * np.log(x / wh)
-    value = np.where(np.isinf(value), 0, value)
+    value = np.where(np.isnan(value), 0, value)
     value = np.sum(value - x + wh)
     return value
 
@@ -104,7 +104,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
     # h = inimat['H_ini']
 
     # w @ h is needed in several places
-    wh = w @ h
+    wh = (w @ h)
 
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
@@ -151,7 +151,9 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
         elif new_obj >= old_obj-tol2:
             logging.warning('Algorithm converged (2)')
         else:
-            break_true = False
+            pass
+
+        break_true = False
 
         if break_true:
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,

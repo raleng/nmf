@@ -1,13 +1,13 @@
 # File handling
-load_file = 'data/pet-matlab/no_noise_data.mat'
-load_var = 'uexact'
+load_file = 'data/pet-matlab/phantom2.mat'
+load_var = 'sinodata'
 
 save_file = 'nmf_exact'
-save_dir = './results/'
+save_dir = './results/phantom2'
 
 # NMF Variables
 features = 3
-kl = False
+kl = True
 
 # Iteration/Algorithm Variables
 max_iter = 100000
