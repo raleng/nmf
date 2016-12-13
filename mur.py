@@ -30,8 +30,10 @@ def wh_update_euclid(x, w, h, wh, alpha_w, alpha_h):
 
 def wh_update_kl(x, w, h, wh):
     """MUR Update with Kullback-Leibler divergence"""
-    h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
-    w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
+    #h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
+    #w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
+    h = h * (w.T @ (x/wh)) / (w.T @ np.ones((x.shape[0], x.shape[1])))
+    w = w * ((x/wh) @ h.T) / (np.ones((x.shape[0], x.shape[1])) @ h.T)
     return w, h
 
 
