@@ -5,7 +5,6 @@ import numpy as np
 import os
 from importlib import import_module
 from misc import loadme
-from os.path import isfile, join
 
 
 def dist_euclid(x, wh):
@@ -46,7 +45,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
 
     Accepts keyword arguments:
     kl -- BOOL: if True, use Kullback Leibler, else Euclidean
-    maxiter -- INT: maximum number of iterations
+    max_iter -- INT: maximum number of iterations
     tol1 -- FLOAT: convergence tolerance
     tol2 -- FLOAT: convergence tolerance
     alpha_W -- FLOAT: regularization parameter for w-Update
@@ -55,23 +54,15 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
     save_file -- STRING: file name to which to save
     """
 
-    experiment_info = """
-                        k: {k}
-                        kl: {kl}
-                        max_iter: {max_iter}
-                        tol1: {tol1}
-                        tol2: {tol2}
-                        alpha_w: {alpha_w}
-                        alpha_h: {alpha_h}
-                      """.format(
-                              k=k,
-                              kl=kl,
-                              max_iter=max_iter,
-                              tol1=tol1,
-                              tol2=tol2,
-                              alpha_w=alpha_w,
-                              alpha_h=alpha_h,
-                              )
+    # save all parameters in dict; to be saved with the results
+    experiment_dict = {'k': k,
+                       'kl': kl,
+                       'max_iter': max_iter,
+                       'tol1': tol1,
+                       'tol2': tol2,
+                       'alpha_w': alpha_w,
+                       'alpha_h': alpha_h,
+                       }
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
@@ -79,11 +70,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-
-    save_str = '{file_path}_{k}_{dist}'.format(file_path=join(save_dir, save_file),
-                                               k=k,
-                                               dist=('KL' if kl else 'EU'),
-                                               )
+    save_str = os.path.join(save_dir, save_file)
 
     # make sure data is positive; should be anyways but data could contain small
     # negative numbers due to rounding errors and such
@@ -118,7 +105,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
 
         if i == max_iter-1:
             np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history,
-                    experiment_info=experiment_info)
+                     experiment_dict=experiment_dict)
             logging.warning('Max iteration. Results saved in {}'.format(save_str))
 
         # Update step
@@ -157,14 +144,14 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
 
         if break_true:
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                    experiment_info=experiment_info)
+                     experiment_dict=experiment_dict)
             logging.warning('Results saved in {}'.format(save_str))
             break
 
         # save every XX iterations
         if i % 100 == 0:
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                    experiment_info=experiment_info)
+                     experiment_dict=experiment_dict)
             logging.warning('Saved on iteration {} in {}'.format(i, save_str))
 
 
@@ -175,7 +162,7 @@ def main(param_file='parameter_file'):
 
     try:
         params = import_module(param_file)
-    except:
+    except ImportError:
         print('No parameter file found.')
         return
 
