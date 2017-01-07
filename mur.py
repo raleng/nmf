@@ -32,9 +32,12 @@ def wh_update_kl(x, w, h, wh):
     """MUR Update with Kullback-Leibler divergence"""
     #h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
     #w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
-    h = h * (w.T @ (x/wh)) / (w.T @ np.ones((x.shape[0], x.shape[1])))
-    w = w * ((x/wh) @ h.T) / (np.ones((x.shape[0], x.shape[1])) @ h.T)
-    return w, h
+    h_new = h * (w.T @ (x / (wh+1e-9)))
+    h_new /= w.T @ np.ones((x.shape[0], x.shape[1]))
+
+    w_new = w * ((x / (wh+1e-9)) @ h.T)
+    w_new /= np.ones((x.shape[0], x.shape[1])) @ h.T
+    return w_new, h_new
 
 
 def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, alpha_h=0.0,
@@ -81,7 +84,8 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
         logging.info('Data elevated.')
 
     # normalizing
-    x /= np.max(x[:])
+    # x /= np.max(x[:])
+    x = x/np.max(x[:])
 
     # initializing w and h with random matrices
     w = np.abs(np.random.randn(x.shape[0], k))
@@ -111,13 +115,20 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
             logging.warning('Max iteration. Results saved in {}'.format(save_str))
 
         # Update step
-        if kl:
-            w, h = wh_update_kl(x, w, h, wh)
+        if i % 2 == 0:
+            if kl:
+                w, _ = wh_update_kl(x, w, h, wh)
+            else:
+                w, _ = wh_update_euclid(x, w, h, wh, alpha_w, alpha_h)
         else:
-            w, h = wh_update_euclid(x, w, h, wh, alpha_w, alpha_h)
+            if kl:
+                _, h = wh_update_kl(x, w, h, wh)
+            else:
+                _, h = wh_update_euclid(x, w, h, wh, alpha_w, alpha_h)
 
         # normalization
-        norms = np.sqrt(np.sum(h.T**2, 0))
+        # TODO normalize to sum = 1
+        norms = np.sqrt(np.sum(h**2, 1))
         h = h / norms[:, None]
         w = w * norms
 
@@ -173,7 +184,7 @@ def main(param_file='parameter_file'):
             data = loadme.msot(params.load_file)
             logging.info('Loaded MSOT data.')
         else:
-            data = loadme.pet(params.load_file, params.load_var)
+            data = loadme.mat(params.load_file, params.load_var)
             logging.info('Loaded PET data.')
     except AttributeError:
         print('No file/variable given.')
