@@ -42,12 +42,12 @@ def wh_update_kl(x, w, h, wh):
 
 def normalize(norm, w, h):
     """ Normalization """
-    if n == 'l1':
+    if norm == 'l1':
         norms = np.sum(h, 1)
         h = h / norms[:, None]
         w = w * norms
 
-    elif n =='l2':
+    elif norm == 'l2':
         norms = np.sqrt(np.sum(h**2, 1))
         h = h / norms[:, None]
         w = w * norms
