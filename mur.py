@@ -40,7 +40,25 @@ def wh_update_kl(x, w, h, wh):
     return w_new, h_new
 
 
-def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, alpha_h=0.0,
+def normalize(norm, w, h):
+    """ Normalization """
+    if n == 'l1':
+        norms = np.sum(h, 1)
+        h = h / norms[:, None]
+        w = w * norms
+
+    elif n =='l2':
+        norms = np.sqrt(np.sum(h**2, 1))
+        h = h / norms[:, None]
+        w = w * norms
+
+    else:
+        raise NameError('Don\'t recognize norm: {}'.format(n))
+
+    return w, h
+
+
+def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, alpha_h=0.0,
         save_dir="./results/", save_file="nmf"):
     """ NMF with MUR
 
@@ -127,10 +145,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
                 _, h = wh_update_euclid(x, w, h, wh, alpha_w, alpha_h)
 
         # normalization
-        # TODO normalize to sum = 1
-        norms = np.sqrt(np.sum(h**2, 1))
-        h = h / norms[:, None]
-        w = w * norms
+        w, h = normalize(norm, w, h)
 
         wh = w @ h
 
@@ -151,6 +166,7 @@ def mur(x, k, *, kl=False, max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, a
         elif new_obj >= old_obj-tol2:
             logging.warning('Algorithm converged (2)')
         else:
+            # break_true = False
             pass
 
         break_true = False
@@ -198,6 +214,7 @@ def main(param_file='parameter_file'):
         mur(data,
             params.features,
             kl=params.kl,
+            norm=params.norm,
             max_iter=params.max_iter,
             tol1=params.tol1,
             tol2=params.tol2,
@@ -206,6 +223,5 @@ def main(param_file='parameter_file'):
             save_dir=params.save_dir,
             save_file=params.save_file,
             )
-    except NameError:
-        print('Parameter file incomplete.\n')
-        raise
+    except NameError as e:
+        raise Exception('Parameter file incomplete.').with_traceback(e.__traceback__)
