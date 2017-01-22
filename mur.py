@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import begin
 import logging
 import numpy as np
@@ -8,13 +8,13 @@ from misc import loadme
 
 
 def dist_euclid(x, wh):
-    """Euclidean distance"""
+    """ Euclidean distance """
     value = 0.5 * np.sum((x - wh) ** 2)
     return value
 
 
 def dist_kl(x, wh):
-    """Kullback-Leibler divergence"""
+    """ Kullback-Leibler divergence """
     value = x * np.log(x / wh)
     value = np.where(np.isnan(value), 0, value)
     value = np.sum(value - x + wh)
@@ -22,16 +22,16 @@ def dist_kl(x, wh):
 
 
 def wh_update_euclid(x, w, h, wh, alpha_w, alpha_h):
-    """MUR Update with euclidean distance"""
+    """ MUR Update with euclidean distance """
     h = h * (w.T @ x) / (w.T @ wh + alpha_h * h + 1e-9)
     w = w * (x @ h.T) / (w @ (h @ h.T) + alpha_w * w + 1e-9)
     return w, h
 
 
 def wh_update_kl(x, w, h, wh):
-    """MUR Update with Kullback-Leibler divergence"""
-    #h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
-    #w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
+    """ MUR Update with Kullback-Leibler divergence """
+    # h = h * ((w.T @ (x / (wh + 1e-9))) / np.sum(w, 0)[:, np.newaxis])
+    # w = w * (h @ (x / (wh + 1e-9)).T / np.sum(h, 1)[:, np.newaxis]).T
     h_new = h * (w.T @ (x / (wh+1e-9)))
     h_new /= w.T @ np.ones((x.shape[0], x.shape[1]))
 
@@ -53,13 +53,13 @@ def normalize(norm, w, h):
         w = w * norms
 
     else:
-        raise NameError('Don\'t recognize norm: {}'.format(n))
+        raise NameError('Don\'t recognize norm: {}'.format(norm))
 
     return w, h
 
 
-def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3, alpha_w=0.0, alpha_h=0.0,
-        save_dir="./results/", save_file="nmf"):
+def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
+        alpha_w=0.0, alpha_h=0.0, save_dir="./results/", save_file="nmf"):
     """ NMF with MUR
 
     Expects following arguments:
