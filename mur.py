@@ -21,6 +21,19 @@ def dist_kl(x, wh):
     return value
 
 
+def normalize(norm, h):
+    """ Normalizing with H """
+
+    if norm == 'l1':
+        norms = np.sum(h, 1)
+    elif norm == 'l2':
+        norms = np.sqrt(np.sum(h**2, 1))
+    else:
+        raise NameError('Don\'t recognize norm: {}'.format(norm))
+
+    return norms
+
+
 def w_update(kl, x, w, h, wh, alpha_w, norm):
     """ MUR Update and normalization """
 
@@ -32,13 +45,7 @@ def w_update(kl, x, w, h, wh, alpha_w, norm):
         w = w * (x @ h.T) / (w @ (h @ h.T) + alpha_w * w + 1e-9)
 
     # Normalizing
-    if norm == 'l1':
-        norms = np.sum(h, 1)
-    elif norm == 'l2':
-        norms = np.sqrt(np.sum(h**2, 1))
-    else:
-        raise NameError('Don\'t recognize norm: {}'.format(norm))
-    w = w * norms
+    w = w * normalize(norm, h)
 
     return w
 
@@ -54,13 +61,7 @@ def h_update(kl, x, w, h, wh, alpha_h, norm):
         h = h * (w.T @ x) / (w.T @ wh + alpha_h * h + 1e-9)
 
     # Normalizing
-    if norm == 'l1':
-        norms = np.sum(h, 1)
-    elif norm == 'l2':
-        norms = np.sqrt(np.sum(h**2, 1))
-    else:
-        raise NameError('Don\'t recognize norm: {}'.format(norm))
-    h = h / norms[:, None]
+    h = h / normalize(norm, h)[:, None]
 
     return h
 
@@ -131,11 +132,12 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         logging.info('Using euclidean distance.')
         obj_history = [dist_euclid(x, wh)]
 
+    ### MAIN ITERATION ###
     for i in range(max_iter):
         old_obj = obj_history[-1]
 
         if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history,
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             logging.warning('Max iteration. Results saved in {}.'.format(save_str))
 
