@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import begin
+import better_exceptions
 import logging
 import numpy as np
 import os
@@ -122,7 +123,8 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     # w = inimat['W_ini']
     # h = inimat['H_ini']
 
-    # precomputing w @ h; needed several times
+    # precomputing w @ h
+    # saves one computation each iteration
     wh = w @ h
 
     if kl:
@@ -143,8 +145,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
 
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
-        wh = w @ h
-        h = h_update(kl, x, w, h, wh, alpha_h, norm)
+        h = h_update(kl, x, w, h, w @ h, alpha_h, norm)
         wh = w @ h
 
         # get new distance
