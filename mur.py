@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-import begin
-import better_exceptions
 import logging
-import numpy as np
 import os
 from importlib import import_module
+
+import begin
+# noinspection PyUnresolvedReferences
+import better_exceptions
+import numpy as np
 from misc import loadme
 
 
@@ -56,8 +58,8 @@ def h_update(kl, x, w, h, wh, alpha_h, norm):
 
     # Update step
     if kl:
-        h_new = h * (w.T @ (x / (wh+1e-9)))
-        h_new /= w.T @ np.ones((x.shape[0], x.shape[1]))
+        h = h * (w.T @ (x / (wh+1e-9)))
+        h /= w.T @ np.ones((x.shape[0], x.shape[1]))
     else:
         h = h * (w.T @ x) / (w.T @ wh + alpha_h * h + 1e-9)
 
@@ -65,6 +67,20 @@ def h_update(kl, x, w, h, wh, alpha_h, norm):
     h = h / normalize(norm, h)[:, None]
 
     return h
+
+
+def convergence_check(new, old, tol1, tol2):
+    """ Checks the convergence criteria """
+    convergence_break = True
+
+    if new < tol1:
+        logging.warning('Algorithm converged (1).')
+    elif new >= old - tol2:
+        logging.warning('Algorithm converged (2).')
+    else:
+        convergence_break = False
+
+    return convergence_break
 
 
 def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
@@ -138,11 +154,6 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     for i in range(max_iter):
         old_obj = obj_history[-1]
 
-        if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            logging.warning('Max iteration. Results saved in {}.'.format(save_str))
-
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
         h = h_update(kl, x, w, h, w @ h, alpha_h, norm)
@@ -158,16 +169,8 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         logging.info('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
         obj_history.append(new_obj)
 
-        # Check convergence
-        break_true = True
-        if new_obj < tol1:
-            logging.warning('Algorithm converged (1).')
-        elif new_obj >= old_obj - tol2:
-            logging.warning('Algorithm converged (2).')
-        else:
-            break_true = False
-
-        if break_true:
+        # Check convergence; save and break iteration
+        if convergence_check(new_obj, old_obj, tol1, tol2):
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             logging.warning('Results saved in {}.'.format(save_str))
@@ -178,6 +181,12 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             logging.warning('Saved on iteration {} in {}.'.format(i, save_str))
+
+        # save on max_iter
+        if i == max_iter-1:
+            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                     experiment_dict=experiment_dict)
+            logging.warning('Max iteration. Results saved in {}.'.format(save_str))
 
 
 @begin.start
