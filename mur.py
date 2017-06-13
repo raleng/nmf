@@ -225,7 +225,7 @@ def main(param_file='parameter_file'):
         return
 
     if data.ndim == 3:
-        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]))
+        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         logging.info('Data was 3D. Reshaped to 2D.')
 
     try:
