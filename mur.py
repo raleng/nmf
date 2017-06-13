@@ -44,8 +44,13 @@ def w_update(kl, x, w, h, wh, alpha_w, norm):
     if kl:
         w = w * ((x / (wh+1e-9)) @ h.T)
         w /= np.ones((x.shape[0], x.shape[1])) @ h.T
+
+        # Alternate update?
+        # b = np.ones((x.shape[0], x.shape[1])) @ h.T
+        # a = w * x / (wh) @ h.T
+        # w = 2 * a / (b + np.sqrt(b * b + 4 * mu * a))
     else:
-        w = w * (x @ h.T) / (w @ (h @ h.T) + alpha_w * w + 1e-9)
+        w = w * (x @ h.T) / (wh @ h.T + alpha_w * w + 1e-9)
 
     # Normalizing
     w = w * normalize(norm, h)
@@ -84,15 +89,16 @@ def convergence_check(new, old, tol1, tol2):
 
 
 def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
-        alpha_w=0.0, alpha_h=0.0, save_dir="./results/", save_file="nmf"):
+        alpha_w=0.0, alpha_h=0.0, save_dir='./results/', save_file='nmf'):
     """ NMF with MUR
 
     Expects following arguments:
-    X -- 2D Data
+    x -- 2D Data
     k -- number of components
 
     Accepts keyword arguments:
     kl -- BOOL: if True, use Kullback Leibler, else Euclidean
+    norm -- STRING: what norm to use (l1 or l2)
     max_iter -- INT: maximum number of iterations
     tol1 -- FLOAT: convergence tolerance
     tol2 -- FLOAT: convergence tolerance
@@ -101,6 +107,10 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     save_dir -- STRING: folder to which to save
     save_file -- STRING: file name to which to save
     """
+
+    # create folder, if not existing
+    os.makedirs(save_dir, exist_ok=True)
+    save_str = os.path.join(save_dir, save_file)
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,
@@ -112,13 +122,11 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
                        'alpha_h': alpha_h,
                        }
 
+
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
     tol_precision = len(str(tol)) if tol < 1 else 0
 
-    # create folder, if not existing
-    os.makedirs(save_dir, exist_ok=True)
-    save_str = os.path.join(save_dir, save_file)
 
     # make sure data is positive; should be anyways but data could contain small
     # negative numbers due to rounding errors and such
@@ -143,6 +151,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     # saves one computation each iteration
     wh = w @ h
 
+
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
         obj_history = [dist_kl(x, wh)]
@@ -150,9 +159,12 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         logging.info('Using euclidean distance.')
         obj_history = [dist_euclid(x, wh)]
 
-    ### MAIN ITERATION ###
+
+    # Main iteration
     for i in range(max_iter):
+        
         old_obj = obj_history[-1]
+
 
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
@@ -164,6 +176,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
             new_obj = dist_kl(x, wh)
         else:
             new_obj = dist_euclid(x, wh)
+
 
         # Iteration info
         logging.info('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
