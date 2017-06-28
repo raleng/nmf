@@ -131,7 +131,8 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
-    tol_precision = len(str(tol)) if tol < 1 else 0
+    # tol_precision = len(str(tol)) if tol < 1 else 0
+    tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
 
     # make sure data is positive; should be anyways but data could contain small
