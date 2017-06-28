@@ -42,13 +42,13 @@ def w_update(kl, x, w, h, wh, alpha_w, norm):
 
     # Update step
     if kl:
-        w = w * ((x / (wh+1e-9)) @ h.T)
-        w /= np.ones((x.shape[0], x.shape[1])) @ h.T
+        # w = w * ((x / (wh+1e-9)) @ h.T)
+        # w /= np.ones((x.shape[0], x.shape[1])) @ h.T
 
         # Alternate update?
-        # b = np.ones((x.shape[0], x.shape[1])) @ h.T
-        # a = w * x / (wh) @ h.T
-        # w = 2 * a / (b + np.sqrt(b * b + 4 * mu * a))
+        b = np.ones((x.shape[0], x.shape[1])) @ h.T
+        a = w * ((x / (wh+1e-9)) @ h.T)
+        w = 2 * a / (b + np.sqrt(b * b + 4 * alpha_w * a))
     else:
         w = w * (x @ h.T) / (wh @ h.T + alpha_w * w + 1e-9)
 
@@ -58,13 +58,18 @@ def w_update(kl, x, w, h, wh, alpha_w, norm):
     return w
 
 
-def h_update(kl, x, w, h, wh, alpha_h, norm):
+def h_update(kl, x, w, h, wh, alpha_h1, alpha_h2, norm):
     """ MUR Update with normalization """
 
     # Update step
     if kl:
-        h = h * (w.T @ (x / (wh+1e-9)))
-        h /= w.T @ np.ones((x.shape[0], x.shape[1]))
+        # h = h * (w.T @ (x / (wh+1e-9)))
+        # h /= w.T @ np.ones((x.shape[0], x.shape[1]))
+
+        # Alternative Update?
+        c = h * (w.T @ (x /(wh+1e-9)))
+        d = alpha_h1 * np.ones(h.shape) + w.T @ np.ones((x.shape[0], x.shape[1]))
+        h = 2 * c / (d + np.sqrt(d * d + 4 * alpha_h2 * c))
     else:
         h = h * (w.T @ x) / (w.T @ wh + alpha_h * h + 1e-9)
 
@@ -89,7 +94,7 @@ def convergence_check(new, old, tol1, tol2):
 
 
 def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
-        alpha_w=0.0, alpha_h=0.0, save_dir='./results/', save_file='nmf'):
+        alpha_w=0.0, alpha_h1=0.0, alpha_h2=0.0, save_dir='./results/', save_file='nmf'):
     """ NMF with MUR
 
     Expects following arguments:
@@ -119,7 +124,8 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
                        'tol1': tol1,
                        'tol2': tol2,
                        'alpha_w': alpha_w,
-                       'alpha_h': alpha_h,
+                       'alpha_h1': alpha_h1,
+                       'alpha_h2': alpha_h2,
                        }
 
 
@@ -151,7 +157,6 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     # saves one computation each iteration
     wh = w @ h
 
-
     if kl:
         logging.info('Using Kullback-Leibler divergence.')
         obj_history = [dist_kl(x, wh)]
@@ -160,15 +165,14 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         obj_history = [dist_euclid(x, wh)]
 
 
+    print('Entering Main Loop.')
     # Main iteration
     for i in range(max_iter):
-        
         old_obj = obj_history[-1]
-
 
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
-        h = h_update(kl, x, w, h, w @ h, alpha_h, norm)
+        h = h_update(kl, x, w, h, w @ h, alpha_h1, alpha_h2, norm)
         wh = w @ h
 
         # get new distance
@@ -204,7 +208,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
 
 @begin.start
 @begin.logging
-def main(param_file='parameter_file'):
+def main(param_file='parameter_file', *, transpose=False):
     """ NMF with MUR """
 
     try:
@@ -228,6 +232,9 @@ def main(param_file='parameter_file'):
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         logging.info('Data was 3D. Reshaped to 2D.')
 
+    if transpose:
+        data = data.T
+
     try:
         mur(data,
             params.features,
@@ -237,7 +244,8 @@ def main(param_file='parameter_file'):
             tol1=params.tol1,
             tol2=params.tol2,
             alpha_w=params.alpha_w,
-            alpha_h=params.alpha_h,
+            alpha_h1=params.alpha_h1,
+            alpha_h2=params.alpha_h2,
             save_dir=params.save_dir,
             save_file=params.save_file,
             )
