@@ -103,7 +103,10 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
 
     Accepts keyword arguments:
     kl -- BOOL: if True, use Kullback Leibler, else Euclidean
+<<<<<<< HEAD
+=======
     norm -- STRING: what norm to use (l1 or l2)
+>>>>>>> kl_changes
     max_iter -- INT: maximum number of iterations
     tol1 -- FLOAT: convergence tolerance
     tol2 -- FLOAT: convergence tolerance
@@ -113,10 +116,13 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     save_file -- STRING: file name to which to save
     """
 
+<<<<<<< HEAD
+=======
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
     save_str = os.path.join(save_dir, save_file)
 
+>>>>>>> kl_changes
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,
                        'kl': kl,
@@ -124,6 +130,18 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
                        'tol1': tol1,
                        'tol2': tol2,
                        'alpha_w': alpha_w,
+<<<<<<< HEAD
+                       'alpha_h': alpha_h,
+                       }
+
+    # used for cmd line output; only show reasonable amount of decimal places
+    tol = min(tol1, tol2)
+    tol_precision = len(str(tol)) if tol < 1 else 0
+
+    # create folder, if not existing
+    os.makedirs(save_dir, exist_ok=True)
+    save_str = os.path.join(save_dir, save_file)
+=======
                        'alpha_h1': alpha_h1,
                        'alpha_h2': alpha_h2,
                        }
@@ -134,6 +152,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     # tol_precision = len(str(tol)) if tol < 1 else 0
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
+>>>>>>> kl_changes
 
     # make sure data is positive; should be anyways but data could contain small
     # negative numbers due to rounding errors and such
@@ -171,6 +190,14 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     for i in range(max_iter):
         old_obj = obj_history[-1]
 
+<<<<<<< HEAD
+        if i == max_iter-1:
+            np.savez(save_str, w=w, h=h, i=i, objhistory=obj_history,
+                     experiment_dict=experiment_dict)
+            logging.warning('Max iteration. Results saved in {}'.format(save_str))
+
+=======
+>>>>>>> kl_changes
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
         h = h_update(kl, x, w, h, w @ h, alpha_h1, alpha_h2, norm)
@@ -191,13 +218,20 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         if convergence_check(new_obj, old_obj, tol1, tol2):
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
+<<<<<<< HEAD
+            logging.warning('Results saved in {}'.format(save_str))
+=======
             logging.warning('Results saved in {}.'.format(save_str))
+>>>>>>> kl_changes
             break
 
         # save every XX iterations
         if i % 100 == 0:
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
+<<<<<<< HEAD
+            logging.warning('Saved on iteration {} in {}'.format(i, save_str))
+=======
             logging.warning('Saved on iteration {} in {}.'.format(i, save_str))
 
         # save on max_iter
@@ -205,6 +239,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             logging.warning('Max iteration. Results saved in {}.'.format(save_str))
+>>>>>>> kl_changes
 
 
 @begin.start

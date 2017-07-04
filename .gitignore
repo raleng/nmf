@@ -1,5 +1,6 @@
 parameter_file.py
 misc
+script*
 # VIM swap/undo files
 *.un~
 *.swp
