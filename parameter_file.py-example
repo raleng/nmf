@@ -1,25 +1,30 @@
-# NMF Variables
+## NMF Variables
 features = 3
 kl = False
+norm = 'l2' # possible values: l1, l2
 
-# Iteration/Algorithm Variables
-max_iter = 100000
-tol1 = 1e-3
-tol2 = 1e-3
+
+## Iteration/Algorithm Variables
+max_iter = 10000
+tol1 = 1e-5
+tol2 = 1e-5
 alpha_w = 0.0
-alpha_h = 0.0
+alpha_h = 1000.0
 
-# File handling
-f_name = 'phantom2'
-load_file = 'data/pet-matlab/{}.mat'.format(f_name)
-load_var = 'uexact'
 
-save_dir = './results/{}'.format(f_name)
-save_file = 'nmf_{feat}_{kl}_{tol1}_{tol2}_{aw}_{ah}'.format(
+## File handling
+load_file = 'data/pet-matlab/phantom2.mat'
+load_var = 'sinodata1'
+#load_var = 'sinodata'
+
+save_name = 'nmf'
+save_dir = './results/phantom2_noise'
+
+save_file = '{name}_{feat}_{dist}_{norm}_{alpha_w}_{alpha_h}'.format(
+    name=save_name,
     feat=features,
-    kl='KL' if kl else 'EU',
-    tol1=tol1,
-    tol2=tol2,
-    aw=alpha_w,
-    ah=alpha_h,
-)
+    dist='kl' if kl else 'eu',
+    norm=norm,
+    alpha_w=alpha_w,
+    alpha_h=alpha_h,
+    )
