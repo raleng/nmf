@@ -169,7 +169,6 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
     print('Entering Main Loop.')
     # Main iteration
     for i in range(max_iter):
-        old_obj = obj_history[-1]
 
         # Update step
         w = w_update(kl, x, w, h, wh, alpha_w, norm)
@@ -188,7 +187,7 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
         obj_history.append(new_obj)
 
         # Check convergence; save and break iteration
-        if convergence_check(new_obj, old_obj, tol1, tol2):
+        if convergence_check(new_obj, obj_history[-2], tol1, tol2):
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             logging.warning('Results saved in {}.'.format(save_str))
