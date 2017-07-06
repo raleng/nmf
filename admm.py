@@ -133,7 +133,7 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
 
 
         # get new distance
-        new_obj = distance(v, wh)
+        new_obj = distance(v, w_p@h_p)
 
         # Iteration info
         print('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
@@ -141,7 +141,7 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
 
         # Check convergence; save and break iteration
         if convergence_check(new_obj, obj_history[-2], tol1, tol2) and i > 10:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+            np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Results saved in {}.'.format(save_str))
             break
