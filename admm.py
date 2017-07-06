@@ -52,8 +52,8 @@ def h_update(x, w, h_p, alpha_x, alpha_h, rho):
 
 def x_update(v, wh, alpha_x, rho):
     """ ADMM update of X """
-
-    x = (rho * wh) + np.sqrt((rho * wh - alpha_x - 1)**2 + 4 * rho * v)
+    value = rho * wh - alpha_x - 1
+    x = (value) + np.sqrt(value**2 + 4 * rho * v)
     x /= 2 * rho
     return x
 
