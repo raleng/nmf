@@ -148,13 +148,13 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
 
         # save every XX iterations
         if i%100 == 0:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+            np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Saved on iteration {} in {}.'.format(i, save_str))
 
         # save on max_iter
         if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+            np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Max iteration. Results saved in {}.'.format(save_str))
 
