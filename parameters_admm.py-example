@@ -1,0 +1,23 @@
+## NMF Variables
+features = 3
+rho = 5000
+
+## Iteration/Algorithm Variables
+max_iter = 10000
+tol1 = 1e-5
+tol2 = 1e-5
+
+
+## File handling
+load_file = 'data/pet-matlab/phantom2.mat'
+load_var = 'sinodata1'
+#load_var = 'sinodata'
+
+save_name = 'nmf_admm'
+save_dir = './results/phantom2_noise/admm'
+
+save_file = '{name}_{feat}_{rho}'.format(
+    name=save_name,
+    feat=features,
+    rho=rho,
+    )

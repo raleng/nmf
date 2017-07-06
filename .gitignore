@@ -1,4 +1,5 @@
 parameter_file.py
+parameters_admm.py
 misc
 script*
 # VIM swap/undo files
