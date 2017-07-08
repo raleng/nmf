@@ -87,7 +87,7 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_admm',):
+def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_admm'):
     """ NMF with ADMM
 
     Expects following arguments:
