@@ -32,7 +32,7 @@ def distance(v, wh):
 def w_update(x, h, alpha_x, lambda_w, rho):
     """ ADMM update of W """
     mu = 1/rho * alpha_x
-    A = np.concatenate((sqrt(rho/2) * h, sqrt(lambda_w) * np.eye(h.shape[0])))
+    A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
     b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros(h.shape)))
     w = optimize.nnls(A, b)
     return w
