@@ -7,7 +7,7 @@ import begin
 import better_exceptions
 import numpy as np
 from math import sqrt
-import optimize
+from scipy import optimize
 
 from misc import loadme
 
@@ -76,7 +76,7 @@ def convergence_check(new, old, tol1, tol2):
 
 
 def admm(v, k, *, rho=1, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3, 
-         save_dir='./results/', save_file='nmf_admm',):
+         save_dir='./results/', save_file='nmf_admm'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -154,7 +154,7 @@ def admm(v, k, *, rho=1, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol
 
 
 @begin.start
-def main(param_file='parameters_admm'):
+def main(param_file='parameters_admm_reg'):
     """ NMF with ADMM """
 
     try:
