@@ -33,16 +33,16 @@ def w_update(x, h, alpha_x, lambda_w, rho):
     """ ADMM update of W """
     mu = 1/rho * alpha_x
     A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
-    b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros(h.shape)))
+    b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
     w = optimize.nnls(A, b)
-    return w
+    return w.T
 
 
 def h_update(x, w, alpha_x, lambda_h, rho):
     """ ADMM update of H """
     mu = 1/rho * alpha_x
     A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
-    b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, w.shape[0]))))
+    b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
     h = optimize.nnls(A, b)
     return h
 

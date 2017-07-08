@@ -23,7 +23,7 @@ def initialize(dims, features):
     alpha_w = np.zeros(w.shape)
     alpha_h = np.zeros(h.shape)
 
-    return x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h 
+    return x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h
 
 
 def distance(v, wh):
