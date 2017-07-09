@@ -34,7 +34,11 @@ def w_update(x, h, alpha_x, lambda_w, rho):
     mu = 1/rho * alpha_x
     A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
     b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
-    w = optimize.nnls(A, b)
+
+    w = np.zeros((A.shape[1], b.shape[1]))
+    for i in range(b.shape[1]):
+        w[:, i], _ = optimize.nnls(A, b[:, i])
+
     return w.T
 
 
@@ -43,7 +47,11 @@ def h_update(x, w, alpha_x, lambda_h, rho):
     mu = 1/rho * alpha_x
     A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
     b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
-    h = optimize.nnls(A, b)
+
+    h = np.zeros((A.shape[1], b.shape[1]))
+    for i in range(b.shape[1]):
+        h[:, i], _ = optimize.nnls(A, b[:, 1])
+
     return h
 
 
