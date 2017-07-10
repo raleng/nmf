@@ -5,18 +5,22 @@ from scipy.linalg import solve_triangular
 
 def initialize(cTb, dim_c, dim_b):
     """ Initialize variables """
+    
     f = [set([]) for i in range(dim_b[1])]
-    # FÜR ALLE J
     g = [set(range(dim_c[1])) for i in range(dim_b[1])]
+
     x = np.zeros((dim_c[1], dim_b[1]))
     y = -cTb
+
     alpha = [3 for i in range(dim_b[1])
     beta = [dim_c[1] + 1 for i in range(dim_b[1])
+
     return f, g, x, y, alpha, beta
 
 
 def check_feasiblity(x, y):
     """ """
+
     I = set()
     V = []
     for j in range(x.shape[1]):
@@ -25,12 +29,13 @@ def check_feasiblity(x, y):
             x_index_set = set([i for i, val in enumerate(x[:, j] < 0) if val])
             y_index_set = set([i for i, val in enumerate(y[:, j] < 0) if val])
             V[j] = x_index_set.union(y_index_set)
-            
-    return I, V 
+
+    return I, V
 
 
 def update_f_g(f, g, I, V):
     """ """
+
     V_hat = []
     for j in I:
         if len(V[j]) < beta[j]:
@@ -42,6 +47,8 @@ def update_f_g(f, g, I, V):
             V_hat[j] = V[j]
         elif len(V[j]) >= beta[j] and alpha[j] == 0:
             V_hat[j] = max(V[j])
+        else:
+            raise Exception
 
         f[j] = (f[j] - V_hat[j]).union(V_hat[j].intersection(g[j]))
         g[j] = (g[j] - V_hat[j]).union(V_hat[j].intersection(f[j]))
@@ -51,6 +58,7 @@ def update_f_g(f, g, I, V):
 
 def column_grouping(I, f, g, cTc, cTb):
     """ """
+
     not_picked = I.copy()
     picked = set([])
     while len(not_picked) > 0: # iterate as long as indices are left
@@ -70,10 +78,10 @@ def column_grouping(I, f, g, cTc, cTb):
         
         # for every index that has been picked at any one point, we have to compute y as well
         for index in picked:
-            ixgrid = np.ix_(list(g[index]), list(f[index]))
+            c_ixgrid = np.ix_(list(g[index]), list(f[index]))
             y_ixgrid = np.ix_(list(g[index]), [index])
             # SOLVE_FOR_Y returns only G-version of y, save them to the "big" version according to index
-            y[y_ixgrid] = solve_for_y(cTc[ixgrid], cTb[list(g[index])], x[:, index])
+            y[y_ixgrid] = solve_for_y(cTc[c_ixgrid], cTb[list(g[index])], x[:, index])
 
         not_picked -= picked
         picked = set([])
@@ -93,6 +101,7 @@ def solve_for_x(A, B):
 
 
 def solve_for_y(A, B, x):
+    """ """
     return A @ x - B
 
 
