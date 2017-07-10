@@ -9,8 +9,8 @@ import numpy as np
 from math import sqrt
 from scipy import optimize
 
-from bpp import bpp
 from misc import loadme
+
 
 def initialize(dims, features):
     """ Initializing variables """
@@ -35,7 +35,10 @@ def w_update(x, h, alpha_x, lambda_w, rho):
     A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
     b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
 
-    w = bpp(A, b)
+    w = np.zeros((A.shape[1], b.shape[1]))
+    for i in range(b.shape[1]):
+        w[:, i], _ = optimize.nnls(A, b[:, i])
+
     return w.T
 
 
@@ -45,7 +48,10 @@ def h_update(x, w, alpha_x, lambda_h, rho):
     A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
     b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
 
-    h = bpp(A, b)
+    h = np.zeros((A.shape[1], b.shape[1]))
+    for i in range(b.shape[1]):
+        h[:, i], _ = optimize.nnls(A, b[:, 1])
+
     return h
 
 
@@ -180,17 +186,14 @@ def main(param_file='parameters_admm_reg'):
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         print('Data was 3D. Reshaped to 2D.')
 
-    try:
-        admm(data,
-             params.features,
-             rho=params.rho,
-             lambda_w=params.lambda_w,
-             lambda_h=params.lambda_h,
-             max_iter=params.max_iter,
-             tol1=params.tol1,
-             tol2=params.tol2,
-             save_dir=params.save_dir,
-             save_file=params.save_file,
-             )
-    except NameError as e:
-        raise Exception('Parameter file incomplete.').with_traceback(e.__traceback__)
+    admm(data,
+         params.features,
+         rho=params.rho,
+         lambda_w=params.lambda_w,
+         lambda_h=params.lambda_h,
+         max_iter=params.max_iter,
+         tol1=params.tol1,
+         tol2=params.tol2,
+         save_dir=params.save_dir,
+         save_file=params.save_file,
+         )
