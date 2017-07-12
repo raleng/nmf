@@ -19,7 +19,7 @@ def initialize(cTb, dim_c, dim_b):
 
 
 def check_feasibility(x, y):
-    """ """
+    """ checks whether or not any entry in x, y is negative and returns those indices """
 
     I = set()
     V = []
@@ -34,7 +34,14 @@ def check_feasibility(x, y):
 
 
 def update_f_g(f, g, I, V, alpha, beta):
-    """ """
+    """ update index sets F and G
+
+    1. ideally exchange all infeasible indices
+    2. exchange all infeasible indices at most 3 times if number of infeasible indices
+        is not decreasing
+    3. if number of indices does not increase, exchange only the biggest index
+
+    """
 
     V_hat = []
     for j in I:

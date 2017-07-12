@@ -9,6 +9,7 @@ import numpy as np
 from math import sqrt
 from scipy import optimize
 
+from bpp import bpp
 from misc import loadme
 
 
@@ -31,26 +32,38 @@ def distance(v, wh):
 
 def w_update(x, h, alpha_x, lambda_w, rho):
     """ ADMM update of W """
-    mu = 1/rho * alpha_x
-    A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
-    b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
 
-    w = np.zeros((A.shape[1], b.shape[1]))
-    for i in range(b.shape[1]):
-        w[:, i], _ = optimize.nnls(A, b[:, i])
+    # mu = 1/rho * alpha_x
+    # A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
+    # b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
+    A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
+    b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
+
+    if bpp:
+        w = bpp(A, b)
+    else:
+        w = np.zeros((A.shape[1], b.shape[1]))
+        for i in range(b.shape[1]):
+            w[:, i], _ = optimize.nnls(A, b[:, i])
 
     return w.T
 
 
 def h_update(x, w, alpha_x, lambda_h, rho):
     """ ADMM update of H """
-    mu = 1/rho * alpha_x
-    A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
-    b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
 
-    h = np.zeros((A.shape[1], b.shape[1]))
-    for i in range(b.shape[1]):
-        h[:, i], _ = optimize.nnls(A, b[:, 1])
+    # mu = 1/rho * alpha_x
+    # A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
+    # b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
+    A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
+    b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
+
+    if bpp:
+        h = bpp(A, b)
+    else:
+        h = np.zeros((A.shape[1], b.shape[1]))
+        for i in range(b.shape[1]):
+            h[:, i], _ = optimize.nnls(A, b[:, 1])
 
     return h
 
@@ -71,6 +84,7 @@ def alpha_update(x, wh, alpha_x, rho):
 
 def convergence_check(new, old, tol1, tol2):
     """ Checks the convergence criteria """
+
     convergence_break = True
 
     if new < tol1:
@@ -83,7 +97,7 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def admm(v, k, *, rho=1, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3, 
+def admm(v, k, *, rho=1, bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
          save_dir='./results/', save_file='nmf_admm'):
     """ NMF with ADMM
 
@@ -189,6 +203,7 @@ def main(param_file='parameters_admm_reg'):
     admm(data,
          params.features,
          rho=params.rho,
+         bpp=params.bpp,
          lambda_w=params.lambda_w,
          lambda_h=params.lambda_h,
          max_iter=params.max_iter,
