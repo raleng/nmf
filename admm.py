@@ -36,24 +36,24 @@ def distance(v, wh):
 
 def w_update(x, h, w_p, alpha_x, alpha_w, rho):
     """ ADMM update of W """
-    A = h @ h.T + np.eye(h.shape[0])
+    a = h @ h.T + np.eye(h.shape[0])
     b = h @ x.T + w_p.T + 1/rho * (h @ alpha_x.T - alpha_w.T)
-    w = np.linalg.solve(A, b).T
+    w = np.linalg.solve(a, b).T
     return w
 
 
 def h_update(x, w, h_p, alpha_x, alpha_h, rho):
     """ ADMM update of H """
-    A = w.T @ w + np.eye(w.shape[1])
+    a = w.T @ w + np.eye(w.shape[1])
     b = w.T @ x + h_p + 1/rho * (w.T @ alpha_x - alpha_h)
-    h = np.linalg.solve(A, b)
+    h = np.linalg.solve(a, b)
     return h
 
 
 def x_update(v, wh, alpha_x, rho):
     """ ADMM update of X """
     value = rho * wh - alpha_x - 1
-    x = (value) + np.sqrt(value**2 + 4 * rho * v)
+    x = value + np.sqrt(value**2 + 4 * rho * v)
     x /= 2 * rho
     return x
 
@@ -75,6 +75,7 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
 
 def convergence_check(new, old, tol1, tol2):
     """ Checks the convergence criteria """
+
     convergence_break = True
 
     if new < tol1:
@@ -131,7 +132,6 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
         w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
         alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho)
 
-
         # get new distance
         new_obj = distance(v, w_p@h_p)
 
@@ -147,7 +147,7 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
             break
 
         # save every XX iterations
-        if i%100 == 0:
+        if i % 100 == 0:
             np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Saved on iteration {} in {}.'.format(i, save_str))

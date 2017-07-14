@@ -9,8 +9,12 @@ import numpy as np
 from math import sqrt
 from scipy import optimize
 
-from bpp import bpp
+import bpp
 from misc import loadme
+
+# TODO scaling! normalize W, H accordingly
+
+# TODO separate ANLS and ADMM
 
 
 def initialize(dims, features):
@@ -30,40 +34,40 @@ def distance(v, wh):
     return value
 
 
-def w_update(x, h, alpha_x, lambda_w, rho):
+def w_update(x, h, alpha_x, lambda_w, rho, *, bpp=False):
     """ ADMM update of W """
 
-    # mu = 1/rho * alpha_x
-    # A = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
-    # b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
-    A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
-    b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
+    mu = 1/rho * alpha_x
+    a = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
+    b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
+    # A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
+    # b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
 
     if bpp:
-        w = bpp(A, b)
+        w = bpp.bpp(a, b)
     else:
-        w = np.zeros((A.shape[1], b.shape[1]))
+        w = np.zeros((a.shape[1], b.shape[1]))
         for i in range(b.shape[1]):
-            w[:, i], _ = optimize.nnls(A, b[:, i])
+            w[:, i], _ = optimize.nnls(a, b[:, i])
 
     return w.T
 
 
-def h_update(x, w, alpha_x, lambda_h, rho):
+def h_update(x, w, alpha_x, lambda_h, rho, *, bpp=False):
     """ ADMM update of H """
 
-    # mu = 1/rho * alpha_x
-    # A = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
-    # b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
-    A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
-    b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
+    mu = 1/rho * alpha_x
+    a = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
+    b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
+    # A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
+    # b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
 
     if bpp:
-        h = bpp(A, b)
+        h = bpp.bpp(a, b)
     else:
-        h = np.zeros((A.shape[1], b.shape[1]))
+        h = np.zeros((a.shape[1], b.shape[1]))
         for i in range(b.shape[1]):
-            h[:, i], _ = optimize.nnls(A, b[:, 1])
+            h[:, i], _ = optimize.nnls(a, b[:, 1])
 
     return h
 
@@ -71,7 +75,7 @@ def h_update(x, w, alpha_x, lambda_h, rho):
 def x_update(v, wh, alpha_x, rho):
     """ ADMM update of X """
     value = rho * wh - alpha_x - 1
-    x = (value) + np.sqrt(value**2 + 4 * rho * v)
+    x = value + np.sqrt(value**2 + 4 * rho * v)
     x /= 2 * rho
     return x
 
@@ -139,14 +143,13 @@ def admm(v, k, *, rho=1, bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol
     for i in range(max_iter):
 
         # Update step
-        w = w_update(x, h, alpha_x, lambda_w, rho)
-        h = h_update(x, w, alpha_x, lambda_h, rho)
+        w = w_update(x, h, alpha_x, lambda_w, rho, bpp=bpp)
+        h = h_update(x, w, alpha_x, lambda_h, rho, bpp=bpp)
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho)
 
         alpha_x = alpha_update(x, wh, alpha_x, rho)
-
 
         # get new distance
         new_obj = distance(v, w@h)
@@ -163,7 +166,7 @@ def admm(v, k, *, rho=1, bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol
             break
 
         # save every XX iterations
-        if i%100 == 0:
+        if i % 100 == 0:
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Saved on iteration {} in {}.'.format(i, save_str))

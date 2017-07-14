@@ -6,14 +6,14 @@ from scipy.linalg import solve_triangular
 def initialize(cTb, dim_c, dim_b):
     """ Initialize variables """
 
-    f = [set([]) for i in range(dim_b[1])]
-    g = [set(range(dim_c[1])) for i in range(dim_b[1])]
+    f = [set([]) for _ in range(dim_b[1])]
+    g = [set(range(dim_c[1])) for _ in range(dim_b[1])]
 
     x = np.zeros((dim_c[1], dim_b[1]))
     y = -cTb
 
-    alpha = [3 for i in range(dim_b[1])]
-    beta = [(dim_c[1] + 1) for i in range(dim_b[1])]
+    alpha = [3 for _ in range(dim_b[1])]
+    beta = [(dim_c[1] + 1) for _ in range(dim_b[1])]
 
     return f, g, x, y, alpha, beta
 
@@ -21,19 +21,19 @@ def initialize(cTb, dim_c, dim_b):
 def check_feasibility(x, y):
     """ checks whether or not any entry in x, y is negative and returns those indices """
 
-    I = set()
-    V = []
+    i = set()
+    v = []
     for j in range(x.shape[1]):
         if np.any(x[:, j] < 0) or np.any(y[:, j] < 0):
-            I.add(j)
+            i.add(j)
             x_index_set = set([i for i, val in enumerate(x[:, j] < 0) if val])
             y_index_set = set([i for i, val in enumerate(y[:, j] < 0) if val])
-            V.append(x_index_set.union(y_index_set))
+            v.append(x_index_set.union(y_index_set))
 
-    return I, V
+    return i, v
 
 
-def update_f_g(f, g, I, V, alpha, beta):
+def update_f_g(f, g, i, v, alpha, beta):
     """ update index sets F and G
 
     1. ideally exchange all infeasible indices
@@ -43,27 +43,27 @@ def update_f_g(f, g, I, V, alpha, beta):
 
     """
 
-    V_hat = []
-    for j in I:
-        if len(V[j]) < beta[j]:
-            beta[j] = np.sum(V[j])
+    v_hat = []
+    for j in i:
+        if len(v[j]) < beta[j]:
+            beta[j] = np.sum(v[j])
             alpha[j] = 3
-            V_hat.append(V[j])
-        elif len(V[j]) >= beta[j] and alpha[j] >= 1:
+            v_hat.append(v[j])
+        elif len(v[j]) >= beta[j] and alpha[j] >= 1:
             alpha[j] -= 1
-            V_hat.append(V[j])
-        elif len(V[j]) >= beta[j] and alpha[j] == 0:
-            V_hat.append(max(V[j]))
+            v_hat.append(v[j])
+        elif len(v[j]) >= beta[j] and alpha[j] == 0:
+            v_hat.append(max(v[j]))
         else:
             raise Exception
 
-        f[j] = (f[j] - V_hat[j]).union(V_hat[j].intersection(g[j]))
-        g[j] = (g[j] - V_hat[j]).union(V_hat[j].intersection(f[j]))
+        f[j] = (f[j] - v_hat[j]).union(v_hat[j].intersection(g[j]))
+        g[j] = (g[j] - v_hat[j]).union(v_hat[j].intersection(f[j]))
 
     return f, g
 
 
-def column_grouping(I, f, g, x, y, cTc, cTb):
+def column_grouping(i, f, g, x, y, cTc, cTb):
     """ solves x_f, y_g for indexsets f, g
 
     The general alogrithm works as follows:
@@ -76,7 +76,7 @@ def column_grouping(I, f, g, x, y, cTc, cTb):
             
     """
 
-    not_picked = I.copy()
+    not_picked = i.copy()
     picked = set([])
     while len(not_picked) > 0:
         # take minimal index of I and find all equal indexsets f
@@ -106,20 +106,20 @@ def column_grouping(I, f, g, x, y, cTc, cTb):
     return x, y
 
 
-def solve_for_x(A, B):
+def solve_for_x(a, b):
     """ solve normal equation via Cholesky decomposition and
     forward/backward substitution """
-    L = cholesky(A)
-    x = np.zeros(B.shape)
-    for i in range(B.shape[1]):
-        y = solve_triangular(L, B[:, i], lower=True)
-        x[:, i] = solve_triangular(L, y, lower=True, trans=1)
+    l = cholesky(a)
+    x = np.zeros(b.shape)
+    for i in range(b.shape[1]):
+        y = solve_triangular(l, b[:, i], lower=True)
+        x[:, i] = solve_triangular(l, y, lower=True, trans=1)
     return x
 
 
-def solve_for_y(A, B, x):
+def solve_for_y(a, b, x):
     """ """
-    return A @ x - B
+    return a @ x - b
 
 
 def check_convergence():
@@ -146,7 +146,7 @@ def bpp(c, b):
     # initialize variables
     f, g, x, y, alpha, beta = initialize(cTb, c.shape, b.shape)
 
-    # iterate until x, y are feasable
+    # iterate until x, y are feasible
     infeasible = True
     convergence = False
     while infeasible and not convergence:
