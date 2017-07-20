@@ -3,9 +3,11 @@ from importlib import import_module
 
 import begin
 # noinspection PyUnresolvedReferences
-import better_exceptions
+# import better_exceptions
 import numpy as np
+from math import sqrt
 from misc import loadme
+from scipy import optimize
 from sklearn.preprocessing import normalize
 
 import fcnnls
@@ -13,31 +15,43 @@ import fcnnls
 
 def distance(x, wh):
     """ Kullback-Leibler divergence """
+    # value = 0.5 * np.sum((x - wh) ** 2)
     value = x * np.log(x / wh)
     value = np.where(np.isnan(value), 0, value)
     value = np.sum(value - x + wh)
     return value
 
 
-def w_update(x, h, lambda_w):
-    a = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
-    b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
+def w_update(x, h, lambda_w, *, use_fcnnls=False):
+    """ Update W """
 
-    w = fcnnls.fcnnls(a, b)
+    a = np.concatenate((h.T, sqrt(2*lambda_w) * np.eye(h.shape[0])))
+    b = np.concatenate((x.T, np.zeros((h.shape[0], x.shape[0]))))
+
+    if use_fcnnls:
+        w = fcnnls.fcnnls(a, b)
+    else:
+        w = np.zeros((a.shape[1], b.shape[1]))
+        for i in range(b.shape[1]):
+            w[:, i], _ = optimize.nnls(a, b[:, i])
+
     return w.T
 
 
-def h_update(x, w, lambda_h):
-    a = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
-    b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
+def h_update(x, w, lambda_h, *, use_fcnnls=False):
+    """ Update H """
 
-    h = fcnnls.fcnnls(a, b)
+    a = np.concatenate((w, sqrt(2*lambda_h) * np.eye(w.shape[1])))
+    b = np.concatenate((x, np.zeros((w.shape[1], x.shape[1]))))
+
+    if use_fcnnls:
+        h = fcnnls.fcnnls(a, b)
+    else:
+        h = np.zeros((a.shape[1], b.shape[1]))
+        for i in range(b.shape[1]):
+            h[:, i], _ = optimize.nnls(a, b[:, 1])
+
     return h
-
-
-def normalize(w, h):
-    
-    return w, h
 
 
 def convergence_check(new, old, tol1, tol2):
@@ -55,7 +69,31 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def anls(x, features, *, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_anls'):
+def save_results(convergence, max_iter, i, save_str, w, h, obj_history, experiment_dict):
+    # Check convergence; save and break iteration
+    if convergence and i > 10:
+        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                 experiment_dict=experiment_dict)
+        print('Results saved in {}.'.format(save_str))
+        return True
+
+    # save every XX iterations
+    if i % 100 == 0:
+        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                 experiment_dict=experiment_dict)
+        print('Saved on iteration {} in {}.'.format(i, save_str))
+        return False
+
+    # save on max_iter
+    if i == max_iter-1:
+        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+                 experiment_dict=experiment_dict)
+        print('Max iteration. Results saved in {}.'.format(save_str))
+        return False
+
+
+def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3, tol2=1e-3,
+         save_dir='./results/', save_file='nmf_anls'):
     """ NMF via ANLS with FCNNLS """
 
     # create folder, if not existing
@@ -75,18 +113,22 @@ def anls(x, features, *, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3, tol2=
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    h = np.zeros(features, x.shape[1])
+    h = np.abs(np.random.randn(k, x.shape[1]))
+    h, norm = normalize(h, return_norm=True)
 
-    obj_history = [np.inf]
+    obj_history = [1e10]
 
     for i in range(max_iter):
 
         # Update step
-        w = w_update(x, h, lambda_w)
-        h = h_update(x, w, lambda_h)
+        w = w_update(x, h, lambda_w, use_fcnnls=use_fcnnls)
+        w = w * norm
 
-        w, norm = normalize(w, return_norm=True)
-        h = (h.T * norm).
+        h = h_update(x, w, lambda_h, use_fcnnls=use_fcnnls)
+        h, norm = normalize(h, return_norm=True)
+
+        # w, norm = normalize(w, axis=0, return_norm=True)
+        # h = (h.T * norm).T
 
         new_obj = distance(x, w@h)
 
@@ -94,24 +136,10 @@ def anls(x, features, *, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3, tol2=
         print('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
         obj_history.append(new_obj)
 
-        # Check convergence; save and break iteration
-        if convergence_check(new_obj, obj_history[-2], tol1, tol2) and i > 10:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Results saved in {}.'.format(save_str))
+        # check convergence and save
+        converged = convergence_check(new_obj, obj_history[-2], tol1, tol2)
+        if save_results(converged, max_iter, i, save_str, w, h, obj_history, experiment_dict):
             break
-
-        # save every XX iterations
-        if i % 100 == 0:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Saved on iteration {} in {}.'.format(i, save_str))
-
-        # save on max_iter
-        if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Max iteration. Results saved in {}.'.format(save_str))
 
 
 @begin.start
@@ -141,6 +169,7 @@ def main(param_file='parameters_anls'):
 
     anls(data,
          params.features,
+         use_fcnnls=params.use_fcnnls,
          lambda_w=params.lambda_w,
          lambda_h=params.lambda_h,
          max_iter=params.max_iter,
