@@ -34,7 +34,7 @@ def distance(v, wh):
     return value
 
 
-def w_update(x, h, alpha_x, lambda_w, rho, *, bpp=False):
+def w_update(x, h, alpha_x, lambda_w, rho, *, use_bpp=False):
     """ ADMM update of W """
 
     mu = 1/rho * alpha_x
@@ -43,7 +43,7 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, bpp=False):
     # A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
     # b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
 
-    if bpp:
+    if use_bpp:
         w = bpp.bpp(a, b)
     else:
         w = np.zeros((a.shape[1], b.shape[1]))
@@ -53,7 +53,7 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, bpp=False):
     return w.T
 
 
-def h_update(x, w, alpha_x, lambda_h, rho, *, bpp=False):
+def h_update(x, w, alpha_x, lambda_h, rho, *, use_bpp=False):
     """ ADMM update of H """
 
     mu = 1/rho * alpha_x
@@ -62,7 +62,7 @@ def h_update(x, w, alpha_x, lambda_h, rho, *, bpp=False):
     # A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
     # b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
 
-    if bpp:
+    if use_bpp:
         h = bpp.bpp(a, b)
     else:
         h = np.zeros((a.shape[1], b.shape[1]))
@@ -101,7 +101,7 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def admm(v, k, *, rho=1, bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
+def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
          save_dir='./results/', save_file='nmf_admm'):
     """ NMF with ADMM
 
@@ -143,8 +143,8 @@ def admm(v, k, *, rho=1, bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol
     for i in range(max_iter):
 
         # Update step
-        w = w_update(x, h, alpha_x, lambda_w, rho, bpp=bpp)
-        h = h_update(x, w, alpha_x, lambda_h, rho, bpp=bpp)
+        w = w_update(x, h, alpha_x, lambda_w, rho, use_bpp=use_bpp)
+        h = h_update(x, w, alpha_x, lambda_h, rho, use_bpp=use_bpp)
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho)
