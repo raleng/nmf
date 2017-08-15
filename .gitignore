@@ -11,6 +11,7 @@ script*
 results
 matmul_test
 matmul
+delete_me
 # symbolic link
 data
 #pycharm
