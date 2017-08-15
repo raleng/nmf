@@ -137,6 +137,10 @@ def bpp(c, b):
 
         min_(x>0) || CX - B ||_F^2
 
+
+    paper:
+    - Kim, Park: Fast nonnegative matrix factorization: an active-set-like method and
+        comparisons
     """
 
     # precompute matrices

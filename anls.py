@@ -137,22 +137,33 @@ def save_results(convergence, max_iter, i, save_str, w, h, obj_history, experime
         return False
 
 
-def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3, tol2=1e-3,
-         save_dir='./results/', save_file='nmf_anls'):
-    """ NMF via ANLS with FCNNLS """
+def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3,
+         tol2=1e-3, save_dir='./results/', save_file='nmf_anls'):
+    """ NMF via ANLS with FCNNLS
+
+    according to the follow papers:
+    - Kim, Park: Non-negative matrix factorization based on alternating non-negativity
+        constrained least squares and active set method
+
+    fcnnls paper:
+    - Benthem, Keenan: Fast algorithm for the solution of large-scale non-negativity-
+        constrained least squares problems
+
+    """
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
     save_str = os.path.join(save_dir, save_file)
 
     # save all parameters in dict; to be saved with the results
-    experiment_dict = {'k': k,
-                       'max_iter': max_iter,
-                       'lambda_w': lambda_w,
-                       'lambda_h': lambda_h,
-                       'tol1': tol1,
-                       'tol2': tol2
-                       }
+    experiment_dict = {
+        'k': k,
+        'max_iter': max_iter,
+        'lambda_w': lambda_w,
+        'lambda_h': lambda_h,
+        'tol1': tol1,
+        'tol2': tol2,
+    }
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
@@ -172,24 +183,18 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
         w = w_update(x, h, lambda_w, use_fcnnls=use_fcnnls)
         h = h_update(x, w, lambda_h, use_fcnnls=use_fcnnls)
 
+        # Normalizing
         # h, norm = normalize(h, return_norm=True)
         # w = w * norm
-
         # w, norm = normalize(w, axis=0, return_norm=True)
         # h = (h.T * norm).T
 
-        obj_history.append(distance(x, w@h))
-
-        # Iteration info
+        # Iteration info and convergence check
         sc = stop_criterium(x, w, h, lambda_w, lambda_h)
-
+        obj_history.append(distance(x, w@h))
         print('[{}]: {:.{}f} | {:.{}f}'.format(i, obj_history[-1], tol_precision,
                                                sc/sc_init, tol_precision))
-
-
-        # check convergence and save
         # converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
-
         converged = convergence_sc(sc, sc_init, tol1)
         if save_results(converged, max_iter, i, save_str, w, h, obj_history, experiment_dict):
             break
@@ -220,14 +225,15 @@ def main(param_file='parameters_anls'):
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         print('Data was 3D. Reshaped to 2D.')
 
-    anls(data,
-         params.features,
-         use_fcnnls=params.use_fcnnls,
-         lambda_w=params.lambda_w,
-         lambda_h=params.lambda_h,
-         max_iter=params.max_iter,
-         tol1=params.tol1,
-         tol2=params.tol2,
-         save_dir=params.save_dir,
-         save_file=params.save_file,
-         )
+    anls(
+        data,
+        params.features,
+        use_fcnnls=params.use_fcnnls,
+        lambda_w=params.lambda_w,
+        lambda_h=params.lambda_h,
+        max_iter=params.max_iter,
+        tol1=params.tol1,
+        tol2=params.tol2,
+        save_dir=params.save_dir,
+        save_file=params.save_file,
+    )
