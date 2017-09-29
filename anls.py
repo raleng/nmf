@@ -112,29 +112,12 @@ def convergence_sc(sc, sc_init, tol1):
     return convergence_break
 
 
-def save_results(convergence, max_iter, i, save_str, w, h, obj_history, experiment_dict):
+def save_results(save_str, w, h, i, obj_history, experiment_dict):
     """ save results """
 
-    # Check convergence; save and break iteration
-    if convergence and i > 10:
-        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                 experiment_dict=experiment_dict)
-        print('Results saved in {}.'.format(save_str))
-        return True
-
-    # save every XX iterations
-    if i % 100 == 0:
-        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                 experiment_dict=experiment_dict)
-        print('Saved on iteration {} in {}.'.format(i, save_str))
-        return False
-
-    # save on max_iter
-    if i == max_iter-1:
-        np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                 experiment_dict=experiment_dict)
-        print('Max iteration. Results saved in {}.'.format(save_str))
-        return False
+    np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
+             experiment_dict=experiment_dict)
+    print('Results saved in {}.'.format(save_str))
 
 
 def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3,
@@ -195,9 +178,19 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
         print('[{}]: {:.{}f} | {:.{}f}'.format(i, obj_history[-1], tol_precision,
                                                sc/sc_init, tol_precision))
         # converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
-        converged = convergence_sc(sc, sc_init, tol1)
-        if save_results(converged, max_iter, i, save_str, w, h, obj_history, experiment_dict):
-            break
+        if i > 10:
+            converged = convergence_sc(sc, sc_init, tol1)
+            if converged:
+                save_results(save_str, w, h, i, obj_history, experiment_dict)
+                print('Converged.')
+                break
+
+        if i % 100 == 0:
+            save_results(save_str, w, h, i, obj_history, experiment_dict)
+
+    else:
+        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
+        print('Max iteration reached.')
 
 
 @begin.start
@@ -224,6 +217,10 @@ def main(param_file='parameters_anls'):
     if data.ndim == 3:
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         print('Data was 3D. Reshaped to 2D.')
+
+
+    if params.use_fcnnls:
+        print('Using FCNNLS.')
 
     anls(
         data,

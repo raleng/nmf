@@ -199,11 +199,11 @@ def mur(x, k, *, kl=False, norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
                      experiment_dict=experiment_dict)
             logging.warning('Saved on iteration {} in {}.'.format(i, save_str))
 
+    else:
         # save on max_iter
-        if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            logging.warning('Max iteration. Results saved in {}.'.format(save_str))
+        np.savez(save_str, w=w, h=h, i=max_iter, obj_history=obj_history,
+                 experiment_dict=experiment_dict)
+        logging.warning('Max iteration. Results saved in {}.'.format(save_str))
 
 
 @begin.start

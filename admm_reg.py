@@ -159,7 +159,7 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
         obj_history.append(new_obj)
 
         # Check convergence; save and break iteration
-        if convergence_check(new_obj, obj_history[-2], tol1, tol2) and i > 10:
+        if i > 10 and convergence_check(new_obj, obj_history[-2], tol1, tol2):
             np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
             print('Results saved in {}.'.format(save_str))
@@ -171,11 +171,11 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
                      experiment_dict=experiment_dict)
             print('Saved on iteration {} in {}.'.format(i, save_str))
 
+    else:
         # save on max_iter
-        if i == max_iter-1:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Max iteration. Results saved in {}.'.format(save_str))
+        np.savez(save_str, w=w, h=h, i=max_iter, obj_history=obj_history,
+                 experiment_dict=experiment_dict)
+        print('Max iteration. Results saved in {}.'.format(save_str))
 
 
 @begin.start
