@@ -12,7 +12,8 @@ def initialize(c, a):
 
 
 def cssls(cTc, cTa, *, p_set=None):
-    """ """
+    """ solve the set of equations cTa = cTc * k for the variables in set p_set
+    using fast combinatorial approach """
 
     k = np.zeros(cTa.shape)
     if p_set is None or np.all(p_set):
@@ -29,14 +30,21 @@ def cssls(cTc, cTa, *, p_set=None):
         # the passive sets were equal
         breaks = np.diff(sorted_p_set)
         zeros, = np.nonzero(breaks)
-        break_idx = [0, *list(zeros), p_rhs]
+        break_idx = [-1] + list(zeros) + [p_rhs-1]
 
-        for item in range(len(break_idx)-1):
-            print('cssls loop: {}'.format(item))
-            cols2solve = sorted_e_set[break_idx[item]+1:break_idx[item+1]]
-            # varis = p_set[:, sorted_e_set[break_idx[item]+1]]
-            # k[varis, cols2solve] = np.linalg.solve(cTc, cTa[varis, cols2solve])
-            k[:, cols2solve] = np.linalg.solve(cTc, cTa[:, cols2solve])
+        for index1, index2 in zip(break_idx[:-1], break_idx[1:]):
+            # this test is necessary because [i:i] is an empty list in python
+            if index1+1 == index2:
+                cols2solve = [sorted_e_set[index2]]
+            else:
+                # index1+1 because np.diff finds breaks infront of the break
+                # index2+1 index2 needs to be included
+                cols2solve = sorted_e_set[index1+1:index2+1]
+
+            varis = p_set[:, sorted_e_set[index1+1]]
+            grid_vc = np.ix_(varis, cols2solve)
+            grid_vv = np.ix_(varis, varis)
+            k[grid_vc] = np.linalg.solve(cTc[grid_vv], cTa[grid_vc])
 
     return k
 
@@ -51,7 +59,6 @@ def fcnnls(c, a):
     cTa = c.T @ a
 
     # obtain the initial feasible solution and corresponding passive set
-    print('First cssls')
     k = cssls(cTc, cTa)  # step 4
     p_set = k > 0  # step 5
     k[~p_set] = 0  # step 7
@@ -60,15 +67,13 @@ def fcnnls(c, a):
 
     # active set algorithm for nnls main loop
     while f_set.size != 0:
-
         # solve for the passive variables (uses subroutine cssls)
-        print('Second cssls')
         k[:, f_set] = cssls(cTc, cTa[:, f_set], p_set=p_set[:, f_set])
-        
+
         # find any infeasible solutions
         f_nz, = np.nonzero(np.any(k[:, f_set] < 0, 0))
         h_set = f_set[f_nz]  # step 10
-        
+
         # make infeasible solutions feasible (standard nnls inner loop)
         if h_set.size != 0:
             nh_set = h_set.size
@@ -77,14 +82,14 @@ def fcnnls(c, a):
             while h_set.size != 0 and iter_counter < iter_max:
                 iter_counter += 1
                 alpha[:, range(nh_set)] = np.inf
-                
+
                 # find indices of negative variables in passive set
                 i, j = np.nonzero(np.logical_and(p_set[:, h_set], k[:, h_set] < 0))
                 h_idx = np.ravel_multi_index((i, j), (l_var, nh_set))
                 neg_idx = np.ravel_multi_index((i, h_set[j]), k.shape)
 
                 alpha.flat[h_idx] = d.flat[neg_idx] / (d.flat[neg_idx] - k.flat[neg_idx])
-                min_idx = np.argmin(alpha[:, range(nh_set)])
+                min_idx = np.argmin(alpha[:, range(nh_set)], axis=0)
                 alpha_min = alpha.flat[min_idx]
 
                 alpha[:, range(nh_set)] = np.tile(alpha_min, [l_var, 1])
@@ -94,7 +99,6 @@ def fcnnls(c, a):
                 d.flat[idx_to_zero] = 0
                 p_set.flat[idx_to_zero] = 0
 
-                print('third cssls')
                 k[:, h_set] = cssls(cTc, cTa[:, h_set], p_set=p_set[:, h_set])
                 h_set, = np.nonzero(np.any(k < 0, 0))
                 nh_set = h_set.size
@@ -112,7 +116,7 @@ def fcnnls(c, a):
         # for non-optimal solutions, add the appropriate variable to Pset
         if f_set.size != 0:
             non_optimal = ~p_set[:, f_set] * w[:, f_set]
-            mx_idx = np.argmax(non_optimal)
+            mx_idx = np.argmax(non_optimal, axis=0)
             p_set.flat[np.ravel_multi_index((mx_idx, f_set), (l_var, p_rhs))] = 1
             d[:, f_set] = k[:, f_set]
 
