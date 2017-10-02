@@ -155,7 +155,7 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
     w = np.random.rand(x.shape[0], k)
     h = np.random.rand(k, x.shape[1])
 
-    sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
+    # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
 
     obj_history = [1e10]
 
@@ -181,7 +181,7 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
         # converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
 
         obj_history.append(distance(x, w@h))
-        print('[{}]: {:.{}f}}'.format(i, obj_history[-1], tol_precision))
+        print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
         if i > 10:
             converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
