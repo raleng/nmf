@@ -9,7 +9,6 @@ from importlib import import_module
 from math import sqrt
 import numpy as np
 from scipy import optimize
-from sklearn.preprocessing import normalize
 
 # personal imports
 import fcnnls
@@ -23,6 +22,48 @@ def distance(x, wh):
     value = np.where(np.isnan(value), 0, value)
     value = np.sum(value - x + wh)
     return value
+
+
+def nndsvd(x, rank=None):
+    """ svd based nmf initialization """
+
+    u, s, v = np.linalg.svd(x, full_matrices=False)
+    v = v.T
+
+    if rank is None:
+        rank = x.shape[1]
+
+    w = np.zeros((x.shape[0], rank))
+    h = np.zeros((rank, x.shape[1]))
+
+    w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
+    h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
+
+    for i in range(1, rank):
+        uu = u[:, i]
+        vv = v[:, i]
+
+        uup = (uu >= 0) * uu
+        uun = (uu < 0) * -uu
+        vvp = (vv >= 0) * vv
+        vvn = (vv < 0) * -vv
+
+        uup_norm = np.linalg.norm(uup, 2)
+        uun_norm = np.linalg.norm(uun, 2)
+        vvp_norm = np.linalg.norm(vvp, 2)
+        vvn_norm = np.linalg.norm(vvn, 2)
+
+        termp = uup_norm * vvp_norm
+        termn = uun_norm * vvn_norm
+
+        if termp >= termn:
+            w[:, i] = np.sqrt(s[i] * termp) / uup_norm * uup
+            h[i, :] = np.sqrt(s[i] * termp) / vvp_norm * vvp.T
+        else:
+            w[:, i] = np.sqrt(s[i] * termn) / uun_norm * uun
+            h[i, :] = np.sqrt(s[i] * termn) / vvn_norm * vvn.T
+
+    return w, h
 
 
 def w_update(x, h, lambda_w, *, use_fcnnls=False):
@@ -57,33 +98,6 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
     return h
 
 
-# def gradient(x, w, h, lambda_w, lambda_h):
-#     """ calculate gradient of W and H """
-#     grad_w = w @ (h @ h.T) - x @ h.T + lambda_w * w
-#     grad_h = (w.T @ w) @ h - w.T @ x + lambda_h * h
-#     return grad_w, grad_h
-
-
-# def init_stop_criterium(x, w, h, lambda_w, lambda_h):
-#     """ """
-#     grad_w, grad_h = gradient(x, w, h, lambda_w, lambda_h)
-#     num_all = x.shape[0] * w.shape[1] + x.shape[1] * w.shape[1]
-#     value = np.linalg.norm(np.concatenate(grad_w, grad_h.T), 'fro')/num_all
-#     return value
-
-
-# def stop_criterium(x, w, h, lambda_w, lambda_h):
-#     """ calculate relative projected gradient """
-#     grad_w, grad_h = gradient(x, w, h, lambda_w, lambda_h)
-#
-#     p_grad_w = grad_w[np.logical_or(grad_w < 0, w > 0)]
-#     p_grad_h = grad_h[np.logical_or(grad_h < 0, h > 0)]
-#     p_grad = np.append(p_grad_w, p_grad_h)
-#     p_grad_norm = np.linalg.norm(p_grad)
-#     value = p_grad_norm/p_grad.size
-#     return value
-
-
 def convergence_check(new, old, tol1, tol2):
     """ Checks the convergence criteria """
 
@@ -99,21 +113,12 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def convergence_sc(sc, sc_init, tol1):
-    convergence_break = True
-
-    rel_sc = sc/sc_init
-
-    if rel_sc <= tol1:
-        print('Algorithm converged: {}'.format(rel_sc))
-    else:
-        convergence_break = False
-
-    return convergence_break
-
-
 def save_results(save_str, w, h, i, obj_history, experiment_dict):
     """ save results """
+
+    # Normalizing
+    # h, norm = normalize(h, return_norm=True)
+    # w = w * norm
 
     np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
              experiment_dict=experiment_dict)
@@ -152,13 +157,16 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    w = np.random.rand(x.shape[0], k)
-    h = np.random.rand(k, x.shape[1])
+    # Random W, H init
+    # w = np.random.rand(x.shape[0], k)
+    # h = np.random.rand(k, x.shape[1])
+
+    # NNDSVD W, H init
+    w, h = nndsvd(x, k)
 
     # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
 
     obj_history = [1e10]
-
     # MAIN ITERATION
     for i in range(max_iter):
 
@@ -166,22 +174,10 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
         w = w_update(x, h, lambda_w, use_fcnnls=use_fcnnls)
         h = h_update(x, w, lambda_h, use_fcnnls=use_fcnnls)
 
-        # Normalizing
-        # h, norm = normalize(h, return_norm=True)
-        # w = w * norm
-        # w, norm = normalize(w, axis=0, return_norm=True)
-        # h = (h.T * norm).T
-
-        # Iteration info and convergence check
-
-        # sc = stop_criterium(x, w, h, lambda_w, lambda_h)
-        # obj_history.append(distance(x, w@h))
-        # print('[{}]: {:.{}f} | {:.{}f}'.format(i, obj_history[-1], tol_precision,
-        #                                       sc/sc_init, tol_precision))
-        # converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
-
+        # Iteration info
         obj_history.append(distance(x, w@h))
         print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
+
         if i > 10:
             converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
