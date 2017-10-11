@@ -1,14 +1,16 @@
-#!/usr/bin/env python3
+# system imports
+import begin
 import os
 from importlib import import_module
-
-import begin
 # noinspection PyUnresolvedReferences
 import better_exceptions
+
+# math imports
 import numpy as np
 from math import sqrt
 from scipy import optimize
 
+# personal imports
 import bpp
 from misc import loadme
 
@@ -17,13 +19,56 @@ from misc import loadme
 # TODO separate ANLS and ADMM
 
 
-def initialize(dims, features):
+def initialize(data, features):
     """ Initializing variables """
-    w = np.abs(np.random.randn(dims[0], features))
-    h = np.abs(np.random.randn(features, dims[1]))
+    # w = np.abs(np.random.randn(dims[0], features))
+    # h = np.abs(np.random.randn(features, dims[1]))
+    w, h = nndsvd(data, features)
     x = w @ h
     alpha_x = np.zeros(x.shape)
     return x, w, h, alpha_x
+
+
+def nndsvd(x, rank=None):
+    """ svd based nmf initialization """
+
+    u, s, v = np.linalg.svd(x, full_matrices=False)
+    v = v.T
+
+    if rank is None:
+        rank = x.shape[1]
+
+    w = np.zeros((x.shape[0], rank))
+    h = np.zeros((rank, x.shape[1]))
+
+    w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
+    h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
+
+    for i in range(1, rank):
+        uu = u[:, i]
+        vv = v[:, i]
+
+        uup = (uu >= 0) * uu
+        uun = (uu < 0) * -uu
+        vvp = (vv >= 0) * vv
+        vvn = (vv < 0) * -vv
+
+        uup_norm = np.linalg.norm(uup, 2)
+        uun_norm = np.linalg.norm(uun, 2)
+        vvp_norm = np.linalg.norm(vvp, 2)
+        vvn_norm = np.linalg.norm(vvn, 2)
+
+        termp = uup_norm * vvp_norm
+        termn = uun_norm * vvn_norm
+
+        if termp >= termn:
+            w[:, i] = np.sqrt(s[i] * termp) / uup_norm * uup
+            h[i, :] = np.sqrt(s[i] * termp) / vvp_norm * vvp.T
+        else:
+            w[:, i] = np.sqrt(s[i] * termn) / uun_norm * uun
+            h[i, :] = np.sqrt(s[i] * termn) / vvn_norm * vvn.T
+
+    return w, h
 
 
 def distance(v, wh):
@@ -134,7 +179,7 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    x, w, h, alpha_x = initialize(v.shape, k)
+    x, w, h, alpha_x = initialize(v, k)
 
     # initial distance value
     obj_history = [distance(v, w@h)]

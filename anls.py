@@ -13,57 +13,7 @@ from scipy import optimize
 # personal imports
 import fcnnls
 from misc import loadme
-
-
-def distance(x, wh):
-    """ Kullback-Leibler divergence """
-    # value = 0.5 * np.sum((x - wh) ** 2)
-    value = x * np.log(x / wh)
-    value = np.where(np.isnan(value), 0, value)
-    value = np.sum(value - x + wh)
-    return value
-
-
-def nndsvd(x, rank=None):
-    """ svd based nmf initialization """
-
-    u, s, v = np.linalg.svd(x, full_matrices=False)
-    v = v.T
-
-    if rank is None:
-        rank = x.shape[1]
-
-    w = np.zeros((x.shape[0], rank))
-    h = np.zeros((rank, x.shape[1]))
-
-    w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
-    h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
-
-    for i in range(1, rank):
-        uu = u[:, i]
-        vv = v[:, i]
-
-        uup = (uu >= 0) * uu
-        uun = (uu < 0) * -uu
-        vvp = (vv >= 0) * vv
-        vvn = (vv < 0) * -vv
-
-        uup_norm = np.linalg.norm(uup, 2)
-        uun_norm = np.linalg.norm(uun, 2)
-        vvp_norm = np.linalg.norm(vvp, 2)
-        vvn_norm = np.linalg.norm(vvn, 2)
-
-        termp = uup_norm * vvp_norm
-        termn = uun_norm * vvn_norm
-
-        if termp >= termn:
-            w[:, i] = np.sqrt(s[i] * termp) / uup_norm * uup
-            h[i, :] = np.sqrt(s[i] * termp) / vvp_norm * vvp.T
-        else:
-            w[:, i] = np.sqrt(s[i] * termn) / uun_norm * uun
-            h[i, :] = np.sqrt(s[i] * termn) / vvn_norm * vvn.T
-
-    return w, h
+from utils import distance, nndsvd, save_results
 
 
 def w_update(x, h, lambda_w, *, use_fcnnls=False):
@@ -111,18 +61,6 @@ def convergence_check(new, old, tol1, tol2):
         convergence_break = False
 
     return convergence_break
-
-
-def save_results(save_str, w, h, i, obj_history, experiment_dict):
-    """ save results """
-
-    # Normalizing
-    # h, norm = normalize(h, return_norm=True)
-    # w = w * norm
-
-    np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-             experiment_dict=experiment_dict)
-    print('Results saved in {}.'.format(save_str))
 
 
 def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3,
