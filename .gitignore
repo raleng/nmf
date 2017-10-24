@@ -4,18 +4,24 @@ parameters_admm.py
 parameters_admm_reg.py
 misc
 script*
+
 # VIM swap/undo files
 *.un~
 *.swp
+
 # results folder
 results
 matmul_test
 matmul
 delete_me
+
 # symbolic link
 data
-#pycharm
+
+#pycharm & sublime
 .idea
+*.sublime-project
+*.sublime-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
