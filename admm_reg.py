@@ -3,7 +3,7 @@ import begin
 import os
 from importlib import import_module
 # noinspection PyUnresolvedReferences
-import better_exceptions
+# import better_exceptions
 
 # math imports
 import numpy as np
@@ -11,7 +11,7 @@ from math import sqrt
 from scipy import optimize
 
 # personal imports
-import bpp
+import fcnnls
 from misc import loadme
 
 # TODO scaling! normalize W, H accordingly
@@ -79,17 +79,20 @@ def distance(v, wh):
     return value
 
 
-def w_update(x, h, alpha_x, lambda_w, rho, *, use_bpp=False):
+def w_update(x, h, alpha_x, lambda_w, rho, *, use_fcnnls=False):
     """ ADMM update of W """
 
     mu = 1/rho * alpha_x
+    if np.any((x + mu) < 0):
+        print('[w]: Something neg.')
+        print(np.min(x+mu))
     a = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
     b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
     # A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
     # b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
 
-    if use_bpp:
-        w = bpp.bpp(a, b)
+    if use_fcnnls:
+        w = fcnnls.fcnnls(a, b)
     else:
         w = np.zeros((a.shape[1], b.shape[1]))
         for i in range(b.shape[1]):
@@ -98,17 +101,20 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, use_bpp=False):
     return w.T
 
 
-def h_update(x, w, alpha_x, lambda_h, rho, *, use_bpp=False):
+def h_update(x, w, alpha_x, lambda_h, rho, *, use_fcnnls=False):
     """ ADMM update of H """
 
     mu = 1/rho * alpha_x
+    if np.any((x + mu) < 0):
+        print('[h]: Something neg.')
+        print(np.min(x+mu))
     a = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
     b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
     # A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
     # b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
 
-    if use_bpp:
-        h = bpp.bpp(a, b)
+    if use_fcnnls:
+        h = fcnnls.fcnnls(a, b)
     else:
         h = np.zeros((a.shape[1], b.shape[1]))
         for i in range(b.shape[1]):
@@ -118,10 +124,15 @@ def h_update(x, w, alpha_x, lambda_h, rho, *, use_bpp=False):
 
 
 def x_update(v, wh, alpha_x, rho):
-    """ ADMM update of X """
+    """ ADMM update of X 
+    
+    Following Update formula from Sun & Févotte for beta = 1 (Kullback-Leibler)
+    """
+
     value = rho * wh - alpha_x - 1
     x = value + np.sqrt(value**2 + 4 * rho * v)
     x /= 2 * rho
+
     return x
 
 
@@ -146,7 +157,7 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
+def admm(v, k, *, rho=1, use_fcnnls=True, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
          save_dir='./results/', save_file='nmf_admm'):
     """ NMF with ADMM
 
@@ -179,6 +190,7 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
+    # initialize variables
     x, w, h, alpha_x = initialize(v, k)
 
     # initial distance value
@@ -186,15 +198,32 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
 
     # Main iteration
     for i in range(max_iter):
+        print('Start; No {}.'.format(i+1))
 
         # Update step
-        w = w_update(x, h, alpha_x, lambda_w, rho, use_bpp=use_bpp)
-        h = h_update(x, w, alpha_x, lambda_h, rho, use_bpp=use_bpp)
+        w = w_update(x, h, alpha_x, lambda_w, rho, use_fcnnls=use_fcnnls)
+        h = h_update(x, w, alpha_x, lambda_h, rho, use_fcnnls=use_fcnnls)
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho)
 
         alpha_x = alpha_update(x, wh, alpha_x, rho)
+
+        # find entry in alpha_x with negative values
+        # compute a rho for that entry and save the largest such rho
+        # rho = -alpha_x_entry / x_entry
+        # rho = max(rho, -alpha_x_entry / x_entry)
+        # 
+        # what happens if the corresponding x_entry == 0? 
+        # set as small value? ignore entry?
+        if np.any(alpha_x < 0):
+            neg_indices = np.where(alpha_x < 0)
+            alpha_x_neg = alpha_x[neg_indices]
+            x_neg = x[neg_indices]
+            for a, b in zip(alpha_x_neg, x_neg):
+                b = max(b, 1e-9)
+                rho = max(rho, -a/b)
+            print('a_x neg! rho now: {}'.format(rho))
 
         # get new distance
         new_obj = distance(v, w@h)
@@ -224,7 +253,7 @@ def admm(v, k, *, rho=1, use_bpp=False, lambda_w=0, lambda_h=0, max_iter=100000,
 
 
 @begin.start
-def main(param_file='parameters_admm_reg'):
+def main(param_file='parameters_anls'):
     """ NMF with ADMM """
 
     try:
@@ -251,7 +280,7 @@ def main(param_file='parameters_admm_reg'):
     admm(data,
          params.features,
          rho=params.rho,
-         bpp=params.bpp,
+         use_fcnnls=params.use_fcnnls,
          lambda_w=params.lambda_w,
          lambda_h=params.lambda_h,
          max_iter=params.max_iter,
