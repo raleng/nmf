@@ -53,14 +53,14 @@ def main(param_file='parameters'):
     elif params.method == 'admm':
     	import admm_reg
     	admm_reg.admm(data,
-    		params.features,
-    		rho=params.rho,
-    		use_fcnnls=params.use_fcnnls,
-    		lambda_w=params.lambda_w,
-    		lambda_h=params.lambda_h,
-			max_iter=params.max_iter,
-			tol1=params.tol1,
-			tol2=params.tol2,
-			save_dir=params.save_dir,
-			save_file=params.save_file,
-			)
+                   params.features,
+                   rho=params.rho,
+                   use_fcnnls=params.use_fcnnls,
+                   lambda_w=params.lambda_w,
+                   lambda_h=params.lambda_h,
+                   max_iter=params.max_iter,
+                   tol1=params.tol1,
+                   tol2=params.tol2,
+                   save_dir=params.save_dir,
+                   save_file=params.save_file,
+                   )
