@@ -1,22 +1,18 @@
 # system imports
-import begin
 import os
-from importlib import import_module
 # noinspection PyUnresolvedReferences
-# import better_exceptions
+import better_exceptions
 
 # math imports
-import numpy as np
 from math import sqrt
+import numpy as np
 from scipy import optimize
 
 # personal imports
 import fcnnls
-from misc import loadme
+from utils import convergence_check, distance, nndsvd, save_results
 
 # TODO scaling! normalize W, H accordingly
-
-# TODO separate ANLS and ADMM
 
 
 def initialize(data, features):
@@ -29,65 +25,16 @@ def initialize(data, features):
     return x, w, h, alpha_x
 
 
-def nndsvd(x, rank=None):
-    """ svd based nmf initialization """
-
-    u, s, v = np.linalg.svd(x, full_matrices=False)
-    v = v.T
-
-    if rank is None:
-        rank = x.shape[1]
-
-    w = np.zeros((x.shape[0], rank))
-    h = np.zeros((rank, x.shape[1]))
-
-    w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
-    h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
-
-    for i in range(1, rank):
-        uu = u[:, i]
-        vv = v[:, i]
-
-        uup = (uu >= 0) * uu
-        uun = (uu < 0) * -uu
-        vvp = (vv >= 0) * vv
-        vvn = (vv < 0) * -vv
-
-        uup_norm = np.linalg.norm(uup, 2)
-        uun_norm = np.linalg.norm(uun, 2)
-        vvp_norm = np.linalg.norm(vvp, 2)
-        vvn_norm = np.linalg.norm(vvn, 2)
-
-        termp = uup_norm * vvp_norm
-        termn = uun_norm * vvn_norm
-
-        if termp >= termn:
-            w[:, i] = np.sqrt(s[i] * termp) / uup_norm * uup
-            h[i, :] = np.sqrt(s[i] * termp) / vvp_norm * vvp.T
-        else:
-            w[:, i] = np.sqrt(s[i] * termn) / uun_norm * uun
-            h[i, :] = np.sqrt(s[i] * termn) / vvn_norm * vvn.T
-
-    return w, h
-
-
-def distance(v, wh):
-    """ Kullback-Leibler divergence """
-    value = v * np.log(v / wh)
-    value = np.where(np.isnan(value), 0, value)
-    value = np.sum(value - v + wh)
-    return value
-
-
 def w_update(x, h, alpha_x, lambda_w, rho, *, use_fcnnls=False):
     """ ADMM update of W """
 
-    mu = 1/rho * alpha_x
-    if np.any((x + mu) < 0):
+    x_mu = x + 1/rho * alpha_x
+    # x_mu = (x_mu > 0) * x_mu
+    if np.any((x_mu) < 0):
         print('[w]: Something neg.')
-        print(np.min(x+mu))
+        print(np.min(x_mu))
     a = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
-    b = np.concatenate((sqrt(rho/2) * (x + mu).T, np.zeros((h.shape[0], x.shape[0]))))
+    b = np.concatenate((sqrt(rho/2) * x_mu.T, np.zeros((h.shape[0], x.shape[0]))))
     # A = np.concatenate(h.T, sqrt(2*lambda_w) * np.eye(h.shape[0]))
     # b = np.concatenate(x.T, np.zeros((h.shape[0], x.shape[0])))
 
@@ -104,12 +51,13 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, use_fcnnls=False):
 def h_update(x, w, alpha_x, lambda_h, rho, *, use_fcnnls=False):
     """ ADMM update of H """
 
-    mu = 1/rho * alpha_x
-    if np.any((x + mu) < 0):
+    x_mu = x + 1/rho * alpha_x
+    # x_mu = (x_mu > 0) * x_mu
+    if np.any((x_mu) < 0):
         print('[h]: Something neg.')
-        print(np.min(x+mu))
+        print(np.min(x_mu))
     a = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))
-    b = np.concatenate((sqrt(rho/2) * (x + mu), np.zeros((1, x.shape[1]))))
+    b = np.concatenate((sqrt(rho/2) * x_mu, np.zeros((1, x.shape[1]))))
     # A = np.concatenate(w, sqrt(2*lambda_h) * np.eye(w.shape[1]))
     # b = np.concatenate(x, np.zeros(w.shape[1], x.shape[1]))
 
@@ -131,34 +79,19 @@ def x_update(v, wh, alpha_x, rho):
 
     value = rho * wh - alpha_x - 1
     x = value + np.sqrt(value**2 + 4 * rho * v)
-    x /= 2 * rho
+    x /= (2 * rho)
 
     return x
 
 
 def alpha_update(x, wh, alpha_x, rho):
     """ ADMM update dual variables """
-    alpha_x = alpha_x + rho * (x - wh)
+    alpha_x += rho * (x - wh)
     return alpha_x
 
 
-def convergence_check(new, old, tol1, tol2):
-    """ Checks the convergence criteria """
-
-    convergence_break = True
-
-    if new < tol1:
-        print('Algorithm converged (1).')
-    elif new >= old - tol2:
-        print('Algorithm converged (2).')
-    else:
-        convergence_break = False
-
-    return convergence_break
-
-
-def admm(v, k, *, rho=1, use_fcnnls=True, lambda_w=0, lambda_h=0, max_iter=100000, tol1=1e-3, tol2=1e-3,
-         save_dir='./results/', save_file='nmf_admm'):
+def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, 
+    max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/', save_file='nmf_default'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -194,11 +127,10 @@ def admm(v, k, *, rho=1, use_fcnnls=True, lambda_w=0, lambda_h=0, max_iter=10000
     x, w, h, alpha_x = initialize(v, k)
 
     # initial distance value
-    obj_history = [distance(v, w@h)]
+    obj_history = [distance(v, x)]
 
     # Main iteration
     for i in range(max_iter):
-        print('Start; No {}.'.format(i+1))
 
         # Update step
         w = w_update(x, h, alpha_x, lambda_w, rho, use_fcnnls=use_fcnnls)
@@ -206,86 +138,25 @@ def admm(v, k, *, rho=1, use_fcnnls=True, lambda_w=0, lambda_h=0, max_iter=10000
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho)
-
         alpha_x = alpha_update(x, wh, alpha_x, rho)
 
-        # find entry in alpha_x with negative values
-        # compute a rho for that entry and save the largest such rho
-        # rho = -alpha_x_entry / x_entry
-        # rho = max(rho, -alpha_x_entry / x_entry)
-        # 
-        # what happens if the corresponding x_entry == 0? 
-        # set as small value? ignore entry?
-        if np.any(alpha_x < 0):
-            neg_indices = np.where(alpha_x < 0)
-            alpha_x_neg = alpha_x[neg_indices]
-            x_neg = x[neg_indices]
-            for a, b in zip(alpha_x_neg, x_neg):
-                b = max(b, 1e-9)
-                rho = max(rho, -a/b)
-            print('a_x neg! rho now: {}'.format(rho))
-
-        # get new distance
-        new_obj = distance(v, w@h)
-
         # Iteration info
-        print('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
-        obj_history.append(new_obj)
+        obj_history.append(distance(v, x))
+        print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
         # Check convergence; save and break iteration
-        if i > 10 and convergence_check(new_obj, obj_history[-2], tol1, tol2):
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Results saved in {}.'.format(save_str))
-            break
+        if i > min_iter:
+            converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
+            if converged:
+                save_results(save_str, w, h, i, obj_history, experiment_dict)
+                print('Converged.')
+                break
 
         # save every XX iterations
         if i % 100 == 0:
-            np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Saved on iteration {} in {}.'.format(i, save_str))
+            save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
         # save on max_iter
-        np.savez(save_str, w=w, h=h, i=max_iter, obj_history=obj_history,
-                 experiment_dict=experiment_dict)
-        print('Max iteration. Results saved in {}.'.format(save_str))
-
-
-@begin.start
-def main(param_file='parameters_anls'):
-    """ NMF with ADMM """
-
-    try:
-        params = import_module(param_file)
-    except ImportError:
-        print('No parameter file found.')
-        return
-
-    try:
-        if params.load_var == 'LOAD_MSOT':
-            data = loadme.msot(params.load_file)
-            print('Loaded MSOT data.')
-        else:
-            data = loadme.mat(params.load_file, params.load_var)
-            print('Loaded PET data.')
-    except AttributeError:
-        print('No file/variable given.')
-        return
-
-    if data.ndim == 3:
-        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
-        print('Data was 3D. Reshaped to 2D.')
-
-    admm(data,
-         params.features,
-         rho=params.rho,
-         use_fcnnls=params.use_fcnnls,
-         lambda_w=params.lambda_w,
-         lambda_h=params.lambda_h,
-         max_iter=params.max_iter,
-         tol1=params.tol1,
-         tol2=params.tol2,
-         save_dir=params.save_dir,
-         save_file=params.save_file,
-         )
+        save_results(save_str, w, h, i, obj_history, experiment_dict)
+        print('Max iteration reached.')

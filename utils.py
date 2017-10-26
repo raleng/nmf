@@ -1,6 +1,20 @@
 import numpy as np
 
 
+def convergence_check(new, old, tol1, tol2):
+    """ Checks the convergence criteria """
+
+    convergence_break = True
+    if new < tol1:
+        print('Algorithm converged (1).')
+    elif new >= old - tol2:
+        print('Algorithm converged (2).')
+    else:
+        convergence_break = False
+
+    return convergence_break
+
+
 def distance(x, wh):
     """ Kullback-Leibler divergence """
     # value = 0.5 * np.sum((x - wh) ** 2)

@@ -1,7 +1,5 @@
 # system imports
-import begin
 import os
-from importlib import import_module
 # noinspection PyUnresolvedReferences
 # import better_exceptions
 
@@ -12,8 +10,7 @@ from scipy import optimize
 
 # personal imports
 import fcnnls
-from misc import loadme
-from utils import distance, nndsvd, save_results
+from utils import convergence_check, distance, nndsvd, save_results
 
 
 def w_update(x, h, lambda_w, *, use_fcnnls=False):
@@ -48,23 +45,8 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
     return h
 
 
-def convergence_check(new, old, tol1, tol2):
-    """ Checks the convergence criteria """
-
-    convergence_break = True
-
-    if new < tol1:
-        print('Algorithm converged (1).')
-    elif new >= old - tol2:
-        print('Algorithm converged (2).')
-    else:
-        convergence_break = False
-
-    return convergence_break
-
-
-def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=1e-3,
-         tol2=1e-3, save_dir='./results/', save_file='nmf_anls'):
+def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
+     max_iter=1000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_default'):
     """ NMF via ANLS with FCNNLS
 
     according to the follow papers:
@@ -116,7 +98,7 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
         obj_history.append(distance(x, w@h))
         print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
-        if i > 10:
+        if i > min_iter:
             converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
                 save_results(save_str, w, h, i, obj_history, experiment_dict)
@@ -129,45 +111,3 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, max_iter=1000, tol1=
     else:
         save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
         print('Max iteration reached.')
-
-
-@begin.start
-def main(param_file='parameters_anls'):
-    """ NMF with ANLS """
-
-    try:
-        params = import_module(param_file)
-    except ImportError:
-        print('No parameter file found.')
-        return
-
-    try:
-        if params.load_var == 'LOAD_MSOT':
-            data = loadme.msot(params.load_file)
-            print('Loaded MSOT data.')
-        else:
-            data = loadme.mat(params.load_file, params.load_var)
-            print('Loaded PET data.')
-    except AttributeError:
-        print('No file/variable given.')
-        return
-
-    if data.ndim == 3:
-        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
-        print('Data was 3D. Reshaped to 2D.')
-
-    if params.use_fcnnls:
-        print('Using FCNNLS.')
-
-    anls(
-        data,
-        params.features,
-        use_fcnnls=params.use_fcnnls,
-        lambda_w=params.lambda_w,
-        lambda_h=params.lambda_h,
-        max_iter=params.max_iter,
-        tol1=params.tol1,
-        tol2=params.tol2,
-        save_dir=params.save_dir,
-        save_file=params.save_file,
-    )

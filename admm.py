@@ -1,19 +1,22 @@
-#!/usr/bin/env python3
+# system imports
+import begin
 import os
 from importlib import import_module
-
-import begin
 # noinspection PyUnresolvedReferences
 import better_exceptions
+
+# math imports
 import numpy as np
+
+# personal imports
 from misc import loadme
+from utils import convergence_check, distance, nndsvd
 
 
-def initialize(dims, features):
+def initialize(data, features):
     """ Initializing variables """
 
-    w = np.abs(np.random.randn(dims[0], features))
-    h = np.abs(np.random.randn(features, dims[1]))
+    w, h = nndsvd(data, features)
     x = w @ h
 
     w_p = w.copy()
@@ -24,14 +27,6 @@ def initialize(dims, features):
     alpha_h = np.zeros(h.shape)
 
     return x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h
-
-
-def distance(v, wh):
-    """ Kullback-Leibler divergence """
-    value = v * np.log(v / wh)
-    value = np.where(np.isnan(value), 0, value)
-    value = np.sum(value - v + wh)
-    return value
 
 
 def w_update(x, h, w_p, alpha_x, alpha_w, rho):
@@ -73,22 +68,8 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
     return alpha_x, alpha_h, alpha_w
 
 
-def convergence_check(new, old, tol1, tol2):
-    """ Checks the convergence criteria """
-
-    convergence_break = True
-
-    if new < tol1:
-        print('Algorithm converged (1).')
-    elif new >= old - tol2:
-        print('Algorithm converged (2).')
-    else:
-        convergence_break = False
-
-    return convergence_break
-
-
-def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_admm'):
+def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
+    save_dir='./results/', save_file='nmf_default'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -96,7 +77,11 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
     k -- number of components
 
     Accepts keyword arguments:
+    rho -- FLOAT:
+    min_iter -- INT: minimum number of iterations (default: 10)
     max_iter -- INT: maximum number of iterations (default: 100000)
+    tol1 -- FLOAT:
+    tol2 -- FLOAT:
     save_dir -- STRING: folder to which to save
     save_file -- STRING: file name to which to save
     """
@@ -114,7 +99,7 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h = initialize(v.shape, k)
+    x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h = initialize(v, k)
 
     # initial distance value
     obj_history = [distance(v, w@h)]
@@ -140,11 +125,13 @@ def admm(v, k, *, rho=1, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./resu
         obj_history.append(new_obj)
 
         # Check convergence; save and break iteration
-        if i > 10 and convergence_check(new_obj, obj_history[-2], tol1, tol2):
-            np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
+        if i > min_iter:
+            converged = convergence_check(new_obj, obj_history[-2], tol1, tol2)
+            if converged:
+                np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
                      experiment_dict=experiment_dict)
-            print('Results saved in {}.'.format(save_str))
-            break
+                print('Results saved in {}.'.format(save_str))
+                break
 
         # save every XX iterations
         if i % 100 == 0:
