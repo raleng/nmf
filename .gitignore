@@ -2,6 +2,7 @@ parameter_file.py
 parameters_anls.py
 parameters_admm.py
 parameters_admm_reg.py
+parameters.py
 misc
 script*
 
