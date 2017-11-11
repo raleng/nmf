@@ -29,7 +29,7 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, use_fcnnls=False):
     """ ADMM update of W """
 
     x_mu = x + 1/rho * alpha_x
-    # x_mu = (x_mu > 0) * x_mu
+    x_mu = (x_mu > 0) * x_mu
     if np.any((x_mu) < 0):
         print('[w]: Something neg.')
         print(np.min(x_mu))
@@ -52,7 +52,7 @@ def h_update(x, w, alpha_x, lambda_h, rho, *, use_fcnnls=False):
     """ ADMM update of H """
 
     x_mu = x + 1/rho * alpha_x
-    # x_mu = (x_mu > 0) * x_mu
+    x_mu = (x_mu > 0) * x_mu
     if np.any((x_mu) < 0):
         print('[h]: Something neg.')
         print(np.min(x_mu))

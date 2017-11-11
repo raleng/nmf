@@ -1,16 +1,17 @@
 # NMF Variables
-features = 3
-use_fcnnls = False
-lambda_w = 10
-lambda_h = 10
+features = 2
+use_fcnnls = True
+lambda_w = 1
+lambda_h = 100
 
-method = 'anls'
+method = 'admm'
 
 # Phantom
 phantom = 'phantom2'
 phantom_version = 'noise' # exact / noise
 
 # Iteration/Algorithm Variables
+min_iter = 500
 max_iter = 1200
 tol1 = 1e-5
 tol2 = 1e-5
@@ -23,6 +24,8 @@ if phantom_version == 'noise':
     load_var = 'sinodata_noise'
 elif phantom_version == 'exact':
     load_var = 'sinodata_exact'
+else:
+    raise Exception('Unknown dataset: {}.'.format(phantom_version))
 
 save_name = 'nmf_{meth}_{feat}_{lambda_w}_{lambda_h}'.format(
     meth=method,
@@ -36,10 +39,10 @@ save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
 if method == 'anls':
     save_file = save_name
 elif method == 'admm':
-    rho = 1
+    rho = 10
     save_file = '{name}_{rho}'.format(
         name=save_name,
         rho=rho,
         )
 else:
-    raise Exception('Unknown method: {}'.format(method))
+    raise Exception('Unknown method: {}.'.format(method))
