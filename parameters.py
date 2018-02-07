@@ -4,6 +4,7 @@ use_fcnnls = True
 lambda_w = 1
 lambda_h = 100
 
+# either admm or anls
 method = 'admm'
 
 # Phantom

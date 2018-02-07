@@ -12,8 +12,11 @@ def initialize(c, a):
 
 
 def cssls(cTc, cTa, *, p_set=None):
-    """ solve the set of equations cTa = cTc * k for the variables in set p_set
-    using fast combinatorial approach """
+    """ combinatorial subspace least squares
+
+    solve the set of equations cTa = cTc * k for the variables in set p_set
+    using fast combinatorial approach
+    """
 
     k = np.zeros(cTa.shape)
     if p_set is None or np.all(p_set):
@@ -50,7 +53,16 @@ def cssls(cTc, cTa, *, p_set=None):
 
 
 def fcnnls(c, a):
-    """  solves: min_K>0 || CK - A || """
+    """  solves: min_K>0 || CK - A || 
+    
+    Paper:
+        Van Benthem, Keenan: Fast algorithm for the solution of large-scale
+        non-negativity constrained least squares problems
+
+    See Paper, page 446, for "step" references
+
+    This is basically a conversion of the MatLab Code at the end of the above paper
+    """
 
     n_obs, l_var, p_rhs, w, iter_counter, iter_max = initialize(c, a)
 
@@ -79,6 +91,7 @@ def fcnnls(c, a):
             nh_set = h_set.size
             alpha = np.zeros((l_var, nh_set))
 
+            # see paper for details, inner loop VERY technical
             while h_set.size != 0 and iter_counter < iter_max:
                 iter_counter += 1
                 alpha[:, range(nh_set)] = np.inf
@@ -97,15 +110,15 @@ def fcnnls(c, a):
 
                 idx_to_zero = np.ravel_multi_index((min_idx, h_set), d.shape)
                 d.flat[idx_to_zero] = 0
-                p_set.flat[idx_to_zero] = 0
+                p_set.flat[idx_to_zero] = 0 # step 12
 
-                k[:, h_set] = cssls(cTc, cTa[:, h_set], p_set=p_set[:, h_set])
+                k[:, h_set] = cssls(cTc, cTa[:, h_set], p_set=p_set[:, h_set]) # step 13
                 h_set, = np.nonzero(np.any(k < 0, 0))
                 nh_set = h_set.size
 
         # make sure the solution has converged
         if iter_counter == iter_max:
-            print('too bad, max iter')
+            print('Not converged.')
 
         # check solutions for optimality
         w[:, f_set] = cTa[:, f_set] - cTc @ k[:, f_set]

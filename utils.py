@@ -25,7 +25,12 @@ def distance(x, wh):
 
 
 def nndsvd(x, rank=None):
-    """ svd based nmf initialization """
+    """ svd based nmf initialization 
+
+    Paper:
+        Boutsidis, Gallopoulos: SVD based initialization: A head start for
+        nonnegative matrix factorization
+    """
 
     u, s, v = np.linalg.svd(x, full_matrices=False)
     v = v.T
@@ -33,12 +38,16 @@ def nndsvd(x, rank=None):
     if rank is None:
         rank = x.shape[1]
 
+    # initialize w, h
     w = np.zeros((x.shape[0], rank))
     h = np.zeros((rank, x.shape[1]))
 
+    # first column/row: dominant singular triplets of x 
     w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
     h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
 
+    # find dominant singular triplets for every unit rank matrix u_i * v_i^T
+    # see Paper, page 8, for details
     for i in range(1, rank):
         ui = u[:, i]
         vi = v[:, i]
