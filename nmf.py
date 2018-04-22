@@ -11,12 +11,14 @@ from misc import loadme
 def main(param_file='parameters'):
     """ NMF with ANLS """
 
+    # Parameter import
     try:
         params = import_module(param_file)
     except ImportError:
         print('No parameter file found.')
         return
 
+    # Loading data
     try:
         if params.load_var == 'LOAD_MSOT':
             data = loadme.msot(params.load_file)
@@ -28,13 +30,16 @@ def main(param_file='parameters'):
         print('No file/variable given.')
         return
 
+    # Transform data dimensions
     if data.ndim == 3:
         data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
         print('Data was 3D. Reshaped to 2D.')
 
+    # Logging info for FCNNLS usage
     if params.use_fcnnls:
         print('Using FCNNLS.')
 
+    # Method call
     if params.method == 'anls':
         import anls
         anls.anls(
@@ -50,7 +55,6 @@ def main(param_file='parameters'):
             save_dir=params.save_dir,
             save_file=params.save_file,
             )
-
     elif params.method == 'admm':
         import admm_reg
         admm_reg.admm(
