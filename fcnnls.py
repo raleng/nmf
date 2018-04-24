@@ -110,7 +110,7 @@ def fcnnls(c, a):
 
                 idx_to_zero = np.ravel_multi_index((min_idx, h_set), d.shape)
                 d.flat[idx_to_zero] = 0
-                p_set.flat[idx_to_zero] = 0 # step 12
+                p_set.flat[idx_to_zero] = 0  # step 12
 
                 k[:, h_set] = cssls(cTc, cTa[:, h_set], p_set=p_set[:, h_set]) # step 13
                 h_set, = np.nonzero(np.any(k < 0, 0))
