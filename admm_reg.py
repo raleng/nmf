@@ -21,7 +21,7 @@ def initialize(data, features):
     # h = np.abs(np.random.randn(features, dims[1]))
     w, h = nndsvd(data, features)
     x = w @ h
-    alpha_x = np.zeros(x.shape)
+    alpha_x = np.zeros_like(x)
     return x, w, h, alpha_x
 
 

@@ -25,7 +25,7 @@ def distance(x, wh):
 
 
 def nndsvd(x, rank=None):
-    """ svd based nmf initialization 
+    """ svd based nmf initialization
 
     Paper:
         Boutsidis, Gallopoulos: SVD based initialization: A head start for
@@ -42,7 +42,7 @@ def nndsvd(x, rank=None):
     w = np.zeros((x.shape[0], rank))
     h = np.zeros((rank, x.shape[1]))
 
-    # first column/row: dominant singular triplets of x 
+    # first column/row: dominant singular triplets of x
     w[:, 0] = np.sqrt(s[0]) * np.abs(u[:, 0])
     h[0, :] = np.sqrt(s[0]) * np.abs(v[:, 0].T)
 

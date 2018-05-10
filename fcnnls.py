@@ -18,7 +18,7 @@ def cssls(cTc, cTa, *, p_set=None):
     using fast combinatorial approach
     """
 
-    k = np.zeros(cTa.shape)
+    k = np.zeros_like(cTa)
     if p_set is None or np.all(p_set):
         k = np.linalg.solve(cTc, cTa)
     else:
