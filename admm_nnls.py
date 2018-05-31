@@ -90,8 +90,9 @@ def alpha_update(x, wh, alpha_x, rho):
     return alpha_x
 
 
-def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, 
-    max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/', save_file='nmf_default'):
+def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
+         max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/',
+         save_file='nmf_default'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -158,5 +159,5 @@ def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
 
     else:
         # save on max_iter
-        save_results(save_str, w, h, i, obj_history, experiment_dict)
+        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
         print('Max iteration reached.')

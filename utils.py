@@ -15,12 +15,20 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def distance(x, wh):
-    """ Kullback-Leibler divergence """
-    # value = 0.5 * np.sum((x - wh) ** 2)
-    value = x * np.log(x / wh)
-    value = np.where(np.isnan(value), 0, value)
-    value = np.sum(value - x + wh)
+def distance(x, wh, type='kl'):
+    """ distance function for Kullback-Leibler divergence and Euclidean distance """
+
+    if type == 'kl':
+        """ Kullback-Leibler divergence """
+        value = x * np.log(x / wh)
+        value = np.where(np.isnan(value), 0, value)
+        value = np.sum(value - x + wh)
+    elif type == 'eu':
+        """ Euclidean distance """
+        value = 0.5 * np.sum((x - wh) ** 2)
+    else:
+        raise KeyError('Distance type unknown: use "kl" or "eu"')
+
     return value
 
 

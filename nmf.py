@@ -56,8 +56,21 @@ def main(param_file='parameters'):
             save_file=params.save_file,
             )
     elif params.method == 'admm':
-        import admm_reg
-        admm_reg.admm(
+        import admm
+        admm.admm(
+            data,
+            params.features,
+            rho=params.rho,
+            min_iter=params.min_iter,
+            max_iter=params.max_iter,
+            tol1=params.tol1,
+            tol2=params.tol2,
+            save_dir=params.save_dir,
+            save_file=params.save_file,
+        )
+    elif params.method == 'admm_nnls':
+        import admm_nnls
+        admm_nnls.admm(
             data,
             params.features,
             rho=params.rho,
@@ -71,3 +84,5 @@ def main(param_file='parameters'):
             save_dir=params.save_dir,
             save_file=params.save_file,
             )
+    else:
+        raise KeyError('Unknown method type.')

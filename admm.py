@@ -1,7 +1,5 @@
 # system imports
-import begin
 import os
-from importlib import import_module
 # noinspection PyUnresolvedReferences
 import better_exceptions
 
@@ -9,8 +7,7 @@ import better_exceptions
 import numpy as np
 
 # personal imports
-from misc import loadme
-from utils import convergence_check, distance, nndsvd
+from utils import convergence_check, distance, nndsvd, save_results
 
 
 def initialize(data, features):
@@ -69,7 +66,7 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
 
 
 def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
-    save_dir='./results/', save_file='nmf_default'):
+         save_dir='./results/', save_file='nmf_default'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -93,6 +90,7 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,
                        'max_iter': max_iter,
+                       'rho': rho,
                        }
 
     # used for cmd line output; only show reasonable amount of decimal places
@@ -113,72 +111,27 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho)
-
         w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
         alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho)
 
-        # get new distance
-        new_obj = distance(v, w_p@h_p)
-
         # Iteration info
-        print('[{}]: {:.{}f}'.format(i, new_obj, tol_precision))
-        obj_history.append(new_obj)
+        obj_history.append(distance(v, w_p@h_p))
+        print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
         # Check convergence; save and break iteration
         if i > min_iter:
-            converged = convergence_check(new_obj, obj_history[-2], tol1, tol2)
+            converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
-                np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-                print('Results saved in {}.'.format(save_str))
+                save_results(save_str, w, h, i, obj_history, experiment_dict)
+                print('Converged.')
                 break
 
         # save every XX iterations
         if i % 100 == 0:
-            np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=i, obj_history=obj_history,
-                     experiment_dict=experiment_dict)
-            print('Saved on iteration {} in {}.'.format(i, save_str))
+            save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
-        np.savez(save_str, w=w, h=h, w_p=w_p, h_p=h_p, i=max_iter, obj_history=obj_history,
-                 experiment_dict=experiment_dict)
-        print('Max iteration. Results saved in {}.'.format(save_str))
+        # save on max_iter
+        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
+        print('Max iteration reached.')
 
-
-@begin.start
-def main(param_file='parameters_admm'):
-    """ NMF with ADMM """
-
-    try:
-        params = import_module(param_file)
-    except ImportError:
-        print('No parameter file found.')
-        return
-
-    try:
-        if params.load_var == 'LOAD_MSOT':
-            data = loadme.msot(params.load_file)
-            print('Loaded MSOT data.')
-        else:
-            data = loadme.mat(params.load_file, params.load_var)
-            print('Loaded PET data.')
-    except AttributeError:
-        print('No file/variable given.')
-        return
-
-    if data.ndim == 3:
-        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
-        print('Data was 3D. Reshaped to 2D.')
-
-    try:
-        admm(data,
-             params.features,
-             rho=params.rho,
-             max_iter=params.max_iter,
-             tol1=params.tol1,
-             tol2=params.tol2,
-             save_dir=params.save_dir,
-             save_file=params.save_file,
-             )
-    except NameError as e:
-        raise Exception('Parameter file incomplete.').with_traceback(e.__traceback__)
