@@ -101,7 +101,7 @@ def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
 
     Accepts keyword arguments:
     rho -- FLOAT: ADMM parameter
-    lambda_w -- FLOAT: regularization parameter for W
+    lambda_w -- FLOAT: regul   arization parameter for W
     lambda_h -- FLOAT: regularization parameter for H
     max_iter -- INT: maximum number of iterations (default: 100000)
     save_dir -- STRING: folder to which to save

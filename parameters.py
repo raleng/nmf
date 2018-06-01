@@ -4,7 +4,7 @@ use_fcnnls = True
 lambda_w = 1
 lambda_h = 100
 
-# either admm or anls
+# either mur, anls, admm, or admm_nnls
 method = 'admm'
 
 # Phantom
@@ -37,9 +37,14 @@ save_name = 'nmf_{meth}_{feat}_{lambda_w}_{lambda_h}'.format(
 save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
 
 # method specifics
-if method == 'anls':
+if method == 'mur':
+    distance_type = 'kl'
+    norm = 'l2'
+    lambda_h1 = lambda_h
+    lambda_h2 = lambda_h
+elif method == 'anls':
     save_file = save_name
-elif method == 'admm':
+elif method == 'admm' or method == 'admm_nnls':
     rho = 10
     save_file = '{name}_{rho}'.format(
         name=save_name,

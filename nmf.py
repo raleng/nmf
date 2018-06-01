@@ -40,7 +40,23 @@ def main(param_file='parameters'):
         print('Using FCNNLS.')
 
     # Method call
-    if params.method == 'anls':
+    if params.method == 'mur':
+        import mur
+        mur.mur(
+            data,
+            params.features,
+            distance_type=params.distance_type,
+            norm=params.norm,
+            max_iter=params.max_iter,
+            tol1=params.tol1,
+            tol2=params.tol2,
+            lambda_w=params.lambda_w,
+            lambda_h1=params.lambda_h,
+            lambda_h2=params.lambda_h,
+            save_dir=params.save_dir,
+            save_file=params.save_file,
+        )
+    elif params.method == 'anls':
         import anls
         anls.anls(
             data,
