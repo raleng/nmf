@@ -5,28 +5,39 @@ import os
 # noinspection PyUnresolvedReferences
 import better_exceptions
 import numpy as np
+import numpy.linalg as LA
 
 from utils import convergence_check, distance, nndsvd, save_results
 
 
-def normalize(norm, h):
-    """ Normalizing with H """
+def normalize(w):
 
-    if norm == 'l1':
-        norms = np.sum(h, 1)
-    elif norm == 'l2':
-        norms = np.sqrt(np.sum(h**2, 1))
-    else:
-        raise NameError('Don\'t recognize norm: {}'.format(norm))
+    norm = LA.norm(w, axis=0, ord=1)
+    wn = w / norm
 
-    return norms
+    #hn = np.zeros_like(h)
+    #for i in range(h.shape[1]):
+    #    hn[:, i] = h[:, i] * norm
+
+    return wn #, hn
+# def normalize(norm, h):
+#     """ Normalizing with H """
+#
+#     if norm == 'l1':
+#         norms = np.sum(h, 1)
+#     elif norm == 'l2':
+#         norms = np.sqrt(np.sum(h**2, 1))
+#     else:
+#         raise NameError('Don\'t recognize norm: {}'.format(norm))
+#
+#     return norms
 
 
 def w_update(distance_type, x, w, h, wh, lambda_w, norm):
     """ MUR Update and normalization """
 
     # Update step
-    if distance_type:
+    if distance_type == 'kl':
         # w = w * ((x / (wh+1e-9)) @ h.T)
         # w /= np.ones((x.shape[0], x.shape[1])) @ h.T
 
@@ -34,11 +45,14 @@ def w_update(distance_type, x, w, h, wh, lambda_w, norm):
         b = np.ones((x.shape[0], x.shape[1])) @ h.T
         a = w * ((x / (wh+1e-9)) @ h.T)
         w = 2 * a / (b + np.sqrt(b * b + 4 * lambda_w * a))
-    else:
+    elif distance_type == 'eu':
         w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
+    else:
+        raise KeyError('Unknown distance type.')
 
     # Normalizing
-    w = w * normalize(norm, h)
+    # w = w * normalize(norm, h)
+    w = normalize(w)
 
     return w
 
@@ -47,7 +61,7 @@ def h_update(distance_type, x, w, h, wh, lambda_h1, lambda_h2, norm):
     """ MUR Update with normalization """
 
     # Update step
-    if distance_type:
+    if distance_type == 'kl':
         # h = h * (w.T @ (x / (wh+1e-9)))
         # h /= w.T @ np.ones((x.shape[0], x.shape[1]))
 
@@ -55,17 +69,19 @@ def h_update(distance_type, x, w, h, wh, lambda_h1, lambda_h2, norm):
         c = h * (w.T @ (x / (wh+1e-9)))
         d = lambda_h1 * np.ones(h.shape) + w.T @ np.ones((x.shape[0], x.shape[1]))
         h = 2 * c / (d + np.sqrt(d * d + 4 * lambda_h2 * c))
-    else:
+    elif distance_type == 'eu':
         # here was simply lambda_h
         h = h * (w.T @ x) / (w.T @ wh + lambda_h1 * h + 1e-9)
+    else:
+        raise KeyError('Unknown distance type.')
 
     # Normalizing
-    h = h / normalize(norm, h)[:, None]
+    # h = h / normalize(norm, h)[:, None]
 
     return h
 
 
-def mur(x, k, *, distance_type='kl', norm='l2', max_iter=100000, tol1=1e-3, tol2=1e-3,
+def mur(x, k, *, distance_type='kl', norm='l2', max_iter=100000, tol1=1e-5, tol2=1e-5,
         lambda_w=0.0, lambda_h1=0.0, lambda_h2=0.0, save_dir='./results/',
         save_file='nmf'):
     """ NMF with MUR

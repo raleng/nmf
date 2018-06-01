@@ -42,13 +42,20 @@ if method == 'mur':
     norm = 'l2'
     lambda_h1 = lambda_h
     lambda_h2 = lambda_h
+    save_file = '{name}_{dist}'.format(
+        name=save_name,
+        dist=distance_type,
+    )
+
 elif method == 'anls':
     save_file = save_name
-elif method == 'admm' or method == 'admm_nnls':
+
+elif method in {'admm', 'admm_nnls'}:
     rho = 10
     save_file = '{name}_{rho}'.format(
         name=save_name,
         rho=rho,
-        )
+    )
+
 else:
     raise Exception('Unknown method: {}.'.format(method))
