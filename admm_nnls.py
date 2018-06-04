@@ -30,7 +30,7 @@ def w_update(x, h, alpha_x, lambda_w, rho, *, use_fcnnls=False):
 
     x_mu = x + 1/rho * alpha_x
     x_mu = (x_mu > 0) * x_mu
-    if np.any((x_mu) < 0):
+    if np.any(x_mu < 0):
         print('[w]: Something neg.')
         print(np.min(x_mu))
     a = np.concatenate((sqrt(rho/2) * h.T, sqrt(lambda_w) * np.eye(h.shape[0])))
@@ -53,7 +53,7 @@ def h_update(x, w, alpha_x, lambda_h, rho, *, use_fcnnls=False):
 
     x_mu = x + 1/rho * alpha_x
     x_mu = (x_mu > 0) * x_mu
-    if np.any((x_mu) < 0):
+    if np.any(x_mu < 0):
         print('[h]: Something neg.')
         print(np.min(x_mu))
     a = np.concatenate((sqrt(rho/2) * w, sqrt(lambda_h) * np.ones((1, w.shape[1]))))

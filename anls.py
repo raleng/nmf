@@ -45,8 +45,8 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
     return h
 
 
-def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
-     max_iter=1000, tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_default'):
+def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_iter=1000,
+         tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_default'):
     """ NMF via ANLS with FCNNLS
 
     according to the follow papers:

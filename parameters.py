@@ -1,19 +1,19 @@
 # NMF Variables
-features = 2
+features = [3, 4]
 use_fcnnls = True
-lambda_w = 1
-lambda_h = 100
+lambda_w = [0, 1, 10, 100]
+lambda_h = [0, 1, 10, 100]
 
 # either mur, anls, admm, or admm_nnls
-method = 'admm'
+method = 'mur'
 
 # Phantom
-phantom = 'phantom2'
+phantom = 'phantom1'
 phantom_version = 'noise' # exact / noise
 
 # Iteration/Algorithm Variables
-min_iter = 500
-max_iter = 1200
+min_iter = 100
+max_iter = 10000
 tol1 = 1e-5
 tol2 = 1e-5
 
@@ -38,10 +38,7 @@ save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
 
 # method specifics
 if method == 'mur':
-    distance_type = 'kl'
-    norm = 'l2'
-    lambda_h1 = lambda_h
-    lambda_h2 = lambda_h
+    distance_type = 'eu'
     save_file = '{name}_{dist}'.format(
         name=save_name,
         dist=distance_type,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import begin
 from importlib import import_module
+from itertools import product
 
 import numpy as np
 
@@ -18,9 +19,16 @@ def main(param_file='parameters'):
         print('No parameter file found.')
         return
 
+    if params.phantom_version == 'noise':
+        load_var = 'sinodata_noise'
+    elif params.phantom_version == 'exact':
+        load_var = 'sinodata_exact'
+    else:
+        raise Exception('Unknown dataset: {}.'.format(phantom_version))
+
     # Loading data
     try:
-        if params.load_var == 'LOAD_MSOT':
+        if load_var == 'LOAD_MSOT':
             data = loadme.msot(params.load_file)
             print('Loaded MSOT data.')
         else:
@@ -36,26 +44,26 @@ def main(param_file='parameters'):
         print('Data was 3D. Reshaped to 2D.')
 
     # Logging info for FCNNLS usage
-    if params.use_fcnnls:
+    if params.use_fcnnls and params.method in {'anls, admm_nnls'}:
         print('Using FCNNLS.')
 
     # Method call
     if params.method == 'mur':
         import mur
-        mur.mur(
-            data,
-            params.features,
-            distance_type=params.distance_type,
-            norm=params.norm,
-            max_iter=params.max_iter,
-            tol1=params.tol1,
-            tol2=params.tol2,
-            lambda_w=params.lambda_w,
-            lambda_h1=params.lambda_h,
-            lambda_h2=params.lambda_h,
-            save_dir=params.save_dir,
-            save_file=params.save_file,
-        )
+        for features, lambda_w, lambda_h in product(
+            params.features, params.lambda_w, params.lambda_h):
+            mur.mur(
+                data,
+                features,
+                distance_type=params.distance_type,
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                lambda_w=lambda_w,
+                lambda_h=lambda_h,
+                save_dir=params.save_dir,
+            )
     elif params.method == 'anls':
         import anls
         anls.anls(
