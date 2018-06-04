@@ -91,8 +91,7 @@ def alpha_update(x, wh, alpha_x, rho):
 
 
 def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
-         max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/',
-         save_file='nmf_default'):
+         max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -105,12 +104,17 @@ def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
     lambda_h -- FLOAT: regularization parameter for H
     max_iter -- INT: maximum number of iterations (default: 100000)
     save_dir -- STRING: folder to which to save
-    save_file -- STRING: file name to which to save
     """
     
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_str = os.path.join(save_dir, save_file)
+    save_name = 'nmf_mur_{feat}_{lambda_w}_{lambda_h}_{dist}'.format(
+        feat=k,
+        lambda_w=lambda_w,
+        lambda_h=lambda_h,
+        dist=distance_type,
+    )
+    save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,

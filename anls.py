@@ -46,7 +46,7 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
 
 
 def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_iter=1000,
-         tol1=1e-3, tol2=1e-3, save_dir='./results/', save_file='nmf_default'):
+         tol1=1e-3, tol2=1e-3, save_dir='./results/'):
     """ NMF via ANLS with FCNNLS
 
     according to the follow papers:
@@ -61,7 +61,12 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_str = os.path.join(save_dir, save_file)
+    save_name = 'nmf_anls_{feat}_{lambda_w}_{lambda_h}'.format(
+        feat=k,
+        lambda_w=lambda_w,
+        lambda_h=lambda_h,
+    )
+    save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {
@@ -71,6 +76,7 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
         'lambda_h': lambda_h,
         'tol1': tol1,
         'tol2': tol2,
+        'fcnnls': use_fcnnls,
     }
 
     # used for cmd line output; only show reasonable amount of decimal places

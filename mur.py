@@ -92,7 +92,6 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     lambda_w -- FLOAT: regularization parameter for w-Update
     lambda_h -- FLOAT: regularization parameter for h-Update
     save_dir -- STRING: folder to which to save
-    save_file -- STRING: file name to which to save
     """
 
     # create folder, if not existing

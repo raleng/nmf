@@ -66,7 +66,7 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
 
 
 def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
-         save_dir='./results/', save_file='nmf_default'):
+         save_dir='./results/'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -85,7 +85,12 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_str = os.path.join(save_dir, save_file)
+    save_name = 'nmf_admm_{feat}_{lambda_w}_{lambda_h}'.format(
+        feat=k,
+        lambda_w=lambda_w,
+        lambda_h=lambda_h,
+    )
+    save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,

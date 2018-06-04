@@ -50,8 +50,9 @@ def main(param_file='parameters'):
     # Method call
     if params.method == 'mur':
         import mur
-        for features, lambda_w, lambda_h in product(
-            params.features, params.lambda_w, params.lambda_h):
+        for features, lambda_w, lambda_h in product(params.features,
+                                                    params.lambda_w,
+                                                    params.lambda_h):
             mur.mur(
                 data,
                 features,
@@ -66,47 +67,53 @@ def main(param_file='parameters'):
             )
     elif params.method == 'anls':
         import anls
-        anls.anls(
-            data,
-            params.features,
-            use_fcnnls=params.use_fcnnls,
-            lambda_w=params.lambda_w,
-            lambda_h=params.lambda_h,
-            min_iter=params.min_iter,
-            max_iter=params.max_iter,
-            tol1=params.tol1,
-            tol2=params.tol2,
-            save_dir=params.save_dir,
-            save_file=params.save_file,
-            )
+        for features, lambda_w, lambda_h in product(params.features,
+                                                    params.lambda_w,
+                                                    params.lambda_h):
+            anls.anls(
+                data,
+                features,
+                use_fcnnls=params.use_fcnnls,
+                lambda_w=lambda_w,
+                lambda_h=lambda_h,
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+                )
     elif params.method == 'admm':
         import admm
-        admm.admm(
-            data,
-            params.features,
-            rho=params.rho,
-            min_iter=params.min_iter,
-            max_iter=params.max_iter,
-            tol1=params.tol1,
-            tol2=params.tol2,
-            save_dir=params.save_dir,
-            save_file=params.save_file,
-        )
+        for features, lambda_w, lambda_h in product(params.features,
+                                                    params.lambda_w,
+                                                    params.lambda_h):
+            admm.admm(
+                data,
+                features,
+                rho=params.rho,
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+            )
     elif params.method == 'admm_nnls':
         import admm_nnls
-        admm_nnls.admm(
-            data,
-            params.features,
-            rho=params.rho,
-            use_fcnnls=params.use_fcnnls,
-            lambda_w=params.lambda_w,
-            lambda_h=params.lambda_h,
-            min_iter=params.min_iter,
-            max_iter=params.max_iter,
-            tol1=params.tol1,
-            tol2=params.tol2,
-            save_dir=params.save_dir,
-            save_file=params.save_file,
-            )
+        for features, lambda_w, lambda_h in product(params.features,
+                                                    params.lambda_w,
+                                                    params.lambda_h):
+            admm_nnls.admm(
+                data,
+                features,
+                rho=params.rho,
+                use_fcnnls=params.use_fcnnls,
+                lambda_w=lambda_w,
+                lambda_h=lambda_h,
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+                )
     else:
         raise KeyError('Unknown method type.')
