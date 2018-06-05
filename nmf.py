@@ -24,7 +24,7 @@ def main(param_file='parameters'):
     elif params.phantom_version == 'exact':
         load_var = 'sinodata_exact'
     else:
-        raise Exception('Unknown dataset: {}.'.format(phantom_version))
+        raise Exception('Unknown dataset: {}.'.format(params.phantom_version))
 
     # Loading data
     try:
@@ -102,7 +102,7 @@ def main(param_file='parameters'):
         for features, lambda_w, lambda_h in product(params.features,
                                                     params.lambda_w,
                                                     params.lambda_h):
-            admm_nnls.admm(
+            admm_nnls.admm_nnls(
                 data,
                 features,
                 rho=params.rho,

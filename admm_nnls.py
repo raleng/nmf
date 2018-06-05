@@ -90,7 +90,7 @@ def alpha_update(x, wh, alpha_x, rho):
     return alpha_x
 
 
-def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
+def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
          max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/'):
     """ NMF with ADMM
 
@@ -108,11 +108,10 @@ def admm(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
     
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_mur_{feat}_{lambda_w}_{lambda_h}_{dist}'.format(
+    save_name = 'nmf_mur_{feat}_{lambda_w}_{lambda_h}'.format(
         feat=k,
         lambda_w=lambda_w,
         lambda_h=lambda_h,
-        dist=distance_type,
     )
     save_str = os.path.join(save_dir, save_name)
 

@@ -9,7 +9,7 @@ method = 'mur'
 
 # Phantom
 phantom = 'phantom1'
-phantom_version = 'noise' # exact / noise
+phantom_version = 'noise'  # exact / noise
 
 # Iteration/Algorithm Variables
 min_iter = 100

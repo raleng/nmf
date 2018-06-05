@@ -5,14 +5,14 @@ import os
 # noinspection PyUnresolvedReferences
 import better_exceptions
 import numpy as np
-import numpy.linalg as LA
+import numpy.linalg as la
 
 from utils import convergence_check, distance, nndsvd, save_results
 
 
 def normalize(w):
 
-    norm = LA.norm(w, axis=0, ord=1)
+    norm = la.norm(w, axis=0, ord=1)
     wn = w / norm
 
     #hn = np.zeros_like(h)
@@ -33,42 +33,44 @@ def normalize(w):
 #     return norms
 
 
-def w_update(distance_type, x, w, h, wh, lambda_w):
+def w_update(distance_type, x, w, h, wh):
     """ MUR Update and normalization """
 
     # Update step
     if distance_type == 'kl':
         pass
-        # w = w * ((x / (wh+1e-9)) @ h.T)
-        # w /= np.ones((x.shape[0], x.shape[1])) @ h.T
+        w = w * ((x / (wh+1e-9)) @ h.T)
+        w /= np.ones((x.shape[0], x.shape[1])) @ h.T
 
         # Alternate update?
         # b = np.ones((x.shape[0], x.shape[1])) @ h.T
         # a = w * ((x / (wh+1e-9)) @ h.T)
         # w = 2 * a / (b + np.sqrt(b * b + 4 * lambda_w * a))
     elif distance_type == 'eu':
-        w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
+        # w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
+        w = w * (x @ h.T) / (wh @ h.T + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
     return w
 
 
-def h_update(distance_type, x, w, h, wh, lambda_h):
+def h_update(distance_type, x, w, h, wh):
     """ MUR Update with normalization """
 
     # Update step
     if distance_type == 'kl':
         pass
-        # h = h * (w.T @ (x / (wh+1e-9)))
-        # h /= w.T @ np.ones((x.shape[0], x.shape[1]))
+        h = h * (w.T @ (x / (wh+1e-9)))
+        h /= w.T @ np.ones((x.shape[0], x.shape[1]))
 
         # Alternative Update?
         # c = h * (w.T @ (x / (wh+1e-9)))
         # d = lambda_h1 * np.ones(h.shape) + w.T @ np.ones((x.shape[0], x.shape[1]))
         # h = 2 * c / (d + np.sqrt(d * d + 4 * lambda_h2 * c))
     elif distance_type == 'eu':
-        h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
+        # h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
+        h = h * (w.T @ x) / (w.T @ wh + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
@@ -127,7 +129,7 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         logging.info('Data elevated by {}.'.format(amount))
 
     # normalizing
-    #x = x/np.max(x[:])
+    # x = x/np.max(x[:])
 
     # initialize W and H
     w, h = nndsvd(x, k)
@@ -143,9 +145,9 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     for i in range(max_iter):
 
         # Update step
-        w = w_update(distance_type, x, w, h, wh, lambda_w)
+        w = w_update(distance_type, x, w, h, wh)
         # w = normalize(w)
-        h = h_update(distance_type, x, w, h, w @ h, lambda_h)
+        h = h_update(distance_type, x, w, h, w @ h)
         # Normalizing
         # h = h / normalize(norm, h)[:, None]
         wh = w @ h
