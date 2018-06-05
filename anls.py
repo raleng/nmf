@@ -40,7 +40,7 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
     else:
         h = np.zeros((a.shape[1], b.shape[1]))
         for i in range(b.shape[1]):
-            h[:, i], _ = optimize.nnls(a, b[:, 1])
+            h[:, i], _ = optimize.nnls(a, b[:, i])
 
     return h
 
@@ -66,6 +66,9 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
         lambda_w=lambda_w,
         lambda_h=lambda_h,
     )
+    if use_fcnnls:
+        save_name = '{}_fcnnls'.format(save_name)
+
     save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results

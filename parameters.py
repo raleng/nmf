@@ -28,11 +28,9 @@ elif phantom_version == 'exact':
 else:
     raise Exception('Unknown dataset: {}.'.format(phantom_version))
 
-save_name = 'nmf_{meth}_{feat}_{lambda_w}_{lambda_h}'.format(
+save_name = 'nmf_{meth}_{feat}'.format(
     meth=method,
     feat=features,
-    lambda_w=lambda_w,
-    lambda_h=lambda_h,
     )
 save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
 
