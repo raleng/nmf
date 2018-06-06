@@ -42,11 +42,17 @@ def h_update(x, w, h_p, alpha_x, alpha_h, rho):
     return h
 
 
-def x_update(v, wh, alpha_x, rho):
+def x_update(v, wh, alpha_x, rho, distance_type='kl'):
     """ ADMM update of X """
-    value = rho * wh - alpha_x - 1
-    x = value + np.sqrt(value**2 + 4 * rho * v)
-    x /= 2 * rho
+    if distance_type == 'kl':
+        value = rho * wh - alpha_x - 1
+        x = value + np.sqrt(value**2 + 4*rho*v)
+        x /= 2*rho
+    elif distance_type == 'eu':
+        x = wh + (v - wh)
+    else:
+        raise KeyError('Unknown distance type.')
+
     return x
 
 
@@ -65,8 +71,8 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
     return alpha_x, alpha_h, alpha_w
 
 
-def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
-         save_dir='./results/'):
+def admm(v, k, *, rho=1, distance_type='kl', min_iter=10, max_iter=100000, tol1=1e-3,
+         tol2=1e-3, save_dir='./results/'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -85,10 +91,10 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_admm_{feat}_{lambda_w}_{lambda_h}'.format(
+    save_name = 'nmf_admm_{feat}_{rho}_{dist}'.format(
         feat=k,
-        lambda_w=lambda_w,
-        lambda_h=lambda_h,
+        rho=rho,
+        dist=distance_type,
     )
     save_str = os.path.join(save_dir, save_name)
 
@@ -115,9 +121,10 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
         h = h_update(x, w, h_p, alpha_x, alpha_h, rho)
         wh = w @ h
 
-        x = x_update(v, wh, alpha_x, rho)
+        x = x_update(v, wh, alpha_x, rho, distance_type)
         w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
-        alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho)
+        alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w,
+                                                  alpha_h, rho)
 
         # Iteration info
         obj_history.append(distance(v, w_p@h_p))
@@ -139,4 +146,3 @@ def admm(v, k, *, rho=1, min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3,
         # save on max_iter
         save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
         print('Max iteration reached.')
-

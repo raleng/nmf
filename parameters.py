@@ -46,7 +46,7 @@ elif method == 'anls':
     save_file = save_name
 
 elif method in {'admm', 'admm_nnls'}:
-    rho = 10
+    rho = [1, 10, 10, 100]
     save_file = '{name}_{rho}'.format(
         name=save_name,
         rho=rho,

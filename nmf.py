@@ -84,13 +84,13 @@ def main(param_file='parameters'):
                 )
     elif params.method == 'admm':
         import admm
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
+        for features, rho in product(params.features,
+                                     params.rho,
+                                     ):
             admm.admm(
                 data,
                 features,
-                rho=params.rho,
+                rho=rho,
                 min_iter=params.min_iter,
                 max_iter=params.max_iter,
                 tol1=params.tol1,
