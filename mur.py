@@ -98,10 +98,8 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_mur_{feat}_{lambda_w}_{lambda_h}_{dist}'.format(
+    save_name = 'nmf_mur_{feat}_{dist}'.format(
         feat=k,
-        lambda_w=lambda_w,
-        lambda_h=lambda_h,
         dist=distance_type,
     )
     save_str = os.path.join(save_dir, save_name)
