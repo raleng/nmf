@@ -99,13 +99,14 @@ def main(param_file='parameters'):
             )
     elif params.method == 'admm_nnls':
         import admm_nnls
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
+        for features, rho, lambda_w, lambda_h in product(params.features,
+                                                         params.rho,
+                                                         params.lambda_w,
+                                                         params.lambda_h):
             admm_nnls.admm_nnls(
                 data,
                 features,
-                rho=params.rho,
+                rho=rho,
                 use_fcnnls=params.use_fcnnls,
                 lambda_w=lambda_w,
                 lambda_h=lambda_h,

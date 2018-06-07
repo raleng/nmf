@@ -90,6 +90,20 @@ def alpha_update(x, wh, alpha_x, rho):
     return alpha_x
 
 
+def find_rho(x, alpha_x, rho_default=1):
+    if np.any(alpha_x < 0):
+        rho = []
+        indices = np.where(alpha_x.flat < 0)
+        for index in indices:
+            rho.append(-alpha_x.flat(index) / x.flat(index))
+
+        rho = np.max(rho)
+    else:
+        rho = rho_default
+
+    return rho
+
+
 def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10,
               max_iter=100000, tol1=1e-5, tol2=1e-5, save_dir='./results/'):
     """ NMF with ADMM
@@ -108,8 +122,9 @@ def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter
     
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_mur_{feat}_{lambda_w}_{lambda_h}'.format(
+    save_name = 'nmf_admmnnls_{feat}_{rho}_{lambda_w}_{lambda_h}'.format(
         feat=k,
+        rho=rho,
         lambda_w=lambda_w,
         lambda_h=lambda_h,
     )
@@ -120,6 +135,7 @@ def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,
+                       'fcnnls': use_fcnnls,
                        'max_iter': max_iter,
                        'rho': rho,
                        'lambda_w': lambda_w,
@@ -140,6 +156,7 @@ def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter
     for i in range(max_iter):
 
         # Update step
+        rho = find_rho(x, alpha_x, rho)
         w = w_update(x, h, alpha_x, lambda_w, rho, use_fcnnls=use_fcnnls)
         h = h_update(x, w, alpha_x, lambda_h, rho, use_fcnnls=use_fcnnls)
         wh = w @ h

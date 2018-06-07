@@ -1,15 +1,15 @@
 # NMF Variables
-features = [3, 4]
+features = [3]
 use_fcnnls = True
 lambda_w = [0, 1, 10, 100]
 lambda_h = [0, 1, 10, 100]
 
 # either mur, anls, admm, or admm_nnls
-method = 'mur'
+method = 'admm_nnls'
 
 # Phantom
-phantom = 'phantom1'
-phantom_version = 'noise'  # exact / noise
+phantom = 'phantom2'
+phantom_version = 'exact'  # exact / noise
 
 # Iteration/Algorithm Variables
 min_iter = 100
@@ -51,6 +51,10 @@ elif method in {'admm', 'admm_nnls'}:
         name=save_name,
         rho=rho,
     )
+
+elif method == 'admm_nnls':
+    rho = [1]
+    save_file = save_name
 
 else:
     raise Exception('Unknown method: {}.'.format(method))
