@@ -95,7 +95,7 @@ def find_rho(x, alpha_x, rho_default=1):
         rho = []
         indices = np.where(alpha_x.flat < 0)
         for index in indices:
-            rho.append(-alpha_x.flat(index) / x.flat(index))
+            rho.append(-alpha_x.flat[index] / x.flat[index])
 
         rho = np.max(rho)
     else:
