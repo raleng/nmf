@@ -58,7 +58,9 @@ elif method == 'admm_nnls':
 
 elif method == 'ao_admm':
     distance_type = 'eu'
-    admm_iter = 50
+    admm_iter = 10
+    prox_w = 'l2n'
+    prox_h = 'l2n'
 
 else:
     raise Exception('Unknown method: {}.'.format(method))

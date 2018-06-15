@@ -7,6 +7,7 @@ import better_exceptions
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 
 # personal imports
 from utils import convergence_check, distance, nndsvd, save_results
@@ -35,14 +36,19 @@ def admm_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0):
 
 def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
 
-    if prox_type == 'l2':
+    if prox_type == 'l2n':
         n = mat_dual.shape[0]
         k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)])
         offset = [-1, 0, 1]
-        tikh = sp.diags(k, offset).toarray()
+        tikh = sp.diags(k, offset) # .toarray()
 
-        matinv = la.inv(lambda_ * tikh.T @ tikh + rho * np.eye(n))
-        mat = rho * matinv @ (mat_dual - dual)
+        # matinv = la.inv(lambda_ * tikh.T @ tikh + rho * np.eye(n))
+        # mat = rho * matinv @ (mat_dual - dual)
+
+        a = 1/rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
+        b = mat_dual - dual
+        mat = spla.spsolve(a, b)
+
         mat = (mat >= 0) * mat
         return mat.T
 
@@ -55,16 +61,18 @@ def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
         raise TypeError('Unknown prox_type.')
 
 
-def ao_admm(v, k, *, distance_type='eu', lambda_w=0, lambda_h=0, min_iter=10,
+def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_iter=10,
             max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3, save_dir='./results/'):
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_aoadmm_{feat}_{dist}_{lambda_w}:nn_{lambda_h}:l2n'.format(
+    save_name = 'nmf_aoadmm_{feat}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
         dist=distance_type,
-        lambda_w=lambda_w,
-        lambda_h=lambda_h,
+        lambda_w=reg_w[0],
+        prox_w=reg_w[1],
+        lambda_h=reg_h[0],
+        prox_h=reg_h[1],
     )
     save_str = os.path.join(save_dir, save_name)
 
@@ -86,12 +94,12 @@ def ao_admm(v, k, *, distance_type='eu', lambda_w=0, lambda_h=0, min_iter=10,
     # Main iteration
     for i in range(max_iter):
         h, dual_h = admm_update(v, w, h, dual_h, k,
-                                lambda_=lambda_h,
-                                prox_type='l2',
+                                lambda_=reg_h[0],
+                                prox_type=reg_h[1],
                                 admm_iter=admm_iter)
         w, dual_w = admm_update(v.T, h.T, w.T, dual_w.T, k,
-                                lambda_=lambda_w,
-                                prox_type='nn',
+                                lambda_=reg_w[0],
+                                prox_type=reg_w[1],
                                 admm_iter=admm_iter)
         w = w.T
         dual_w = dual_w.T
