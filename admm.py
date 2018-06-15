@@ -19,9 +19,9 @@ def initialize(data, features):
     w_p = w.copy()
     h_p = h.copy()
 
-    alpha_x = np.zeros(x.shape)
-    alpha_w = np.zeros(w.shape)
-    alpha_h = np.zeros(h.shape)
+    alpha_x = np.zeros_like(x)
+    alpha_w = np.zeros_like(w)
+    alpha_h = np.zeros_like(h)
 
     return x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h
 

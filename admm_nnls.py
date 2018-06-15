@@ -91,13 +91,20 @@ def alpha_update(x, wh, alpha_x, rho):
 
 
 def find_rho(x, alpha_x, rho_default=1):
+
     if np.any(alpha_x < 0):
         rho = []
         indices = np.where(alpha_x.flat < 0)
+
+        print('Negative values found at: {}'.format(indices))
+        print(np.min(alpha_x), np.max(alpha_x))
         for index in indices:
             rho.append(-alpha_x.flat[index] / x.flat[index])
 
         rho = np.max(rho)
+        print('Max rho is: {}'.format(rho))
+        if rho == np.inf:
+            rho = rho_default
     else:
         rho = rho_default
 

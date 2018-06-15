@@ -91,6 +91,7 @@ def main(param_file='parameters'):
                 data,
                 features,
                 rho=rho,
+                distance_type=params.distance_type,
                 min_iter=params.min_iter,
                 max_iter=params.max_iter,
                 tol1=params.tol1,
@@ -116,5 +117,24 @@ def main(param_file='parameters'):
                 tol2=params.tol2,
                 save_dir=params.save_dir,
                 )
+
+    elif params.method == 'ao_admm':
+        import ao_admm
+        for features, lambda_w, lambda_h, in product(params.features,
+                                                     params.lambda_w,
+                                                     params.lambda_h):
+            ao_admm.ao_admm(
+                data,
+                features,
+                distance_type=params.distance_type,
+                lambda_w=lambda_w,
+                lambda_h=lambda_h,
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                admm_iter=params.admm_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+            )
     else:
         raise KeyError('Unknown method type.')
