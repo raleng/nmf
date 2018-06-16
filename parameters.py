@@ -2,7 +2,7 @@
 features = [3]
 use_fcnnls = False
 lambda_w = [100]
-lambda_h = [10000]
+lambda_h = [100]
 
 # either mur, anls, admm, admm_nnls, or ao_admm
 method = 'ao_admm'
@@ -14,8 +14,8 @@ phantom_version = 'noise'  # exact / noise
 # Iteration/Algorithm Variables
 min_iter = 100
 max_iter = 10000
-tol1 = 1e-5
-tol2 = 1e-5
+tol1 = 1e-2
+tol2 = 1e-2
 
 # File handling
 load_dir = 'data/pet-matlab/'
@@ -58,7 +58,7 @@ elif method == 'admm_nnls':
 
 elif method == 'ao_admm':
     distance_type = 'eu'
-    admm_iter = 10
+    admm_iter = 20
     prox_w = 'l2n'
     prox_h = 'l2n'
 
