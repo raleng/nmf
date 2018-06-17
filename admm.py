@@ -5,6 +5,8 @@ import better_exceptions
 
 # math imports
 import numpy as np
+import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 
 # personal imports
 from utils import convergence_check, distance, nndsvd, save_results
@@ -56,6 +58,24 @@ def x_update(v, wh, alpha_x, rho, distance_type='kl'):
     return x
 
 
+def prox(prox_type, mat_dual, dual, rho=None, lambda_=None):
+    if prox_type == 'nn':
+        return np.maximum(mat_dual + 1/rho * dual, 0)
+
+    elif prox_type == 'l2n':
+        n = mat_dual.shape[0]
+        k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)])
+        offset = [-1, 0, 1]
+        tikh = sp.diags(k, offset)  # .toarray()
+
+        a = rho * (lambda_ * tikh.T @ tikh + 1/rho * sp.eye(n))
+        b = mat_dual - dual/rho
+        mat = spla.spsolve(a, b)
+
+        mat = (mat >= 0) * mat
+        return mat
+
+
 def wh_p_update(w, h, alpha_w, alpha_h, rho):
     """ ADMM update of W_plus and H_plus """
     w_p = np.maximum(w + 1/rho * alpha_w, 0)
@@ -71,8 +91,8 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
     return alpha_x, alpha_h, alpha_w
 
 
-def admm(v, k, *, rho=1, distance_type='kl', min_iter=10, max_iter=100000, tol1=1e-3,
-         tol2=1e-3, save_dir='./results/'):
+def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
+         min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./results/'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -91,10 +111,13 @@ def admm(v, k, *, rho=1, distance_type='kl', min_iter=10, max_iter=100000, tol1=
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_admm_{feat}_{rho}_{dist}'.format(
+    save_name = 'nmf_ao_admm_{feat}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
-        rho=rho,
         dist=distance_type,
+        lambda_w=reg_w[0],
+        prox_w=reg_w[1],
+        lambda_h=reg_h[0],
+        prox_h=reg_h[1],
     )
     save_str = os.path.join(save_dir, save_name)
 
@@ -111,7 +134,7 @@ def admm(v, k, *, rho=1, distance_type='kl', min_iter=10, max_iter=100000, tol1=
     x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h = initialize(v, k)
 
     # initial distance value
-    obj_history = [distance(v, w@h)]
+    obj_history = [distance(v, w@h, distance_type=distance_type)]
 
     # Main iteration
     for i in range(max_iter):
@@ -122,12 +145,15 @@ def admm(v, k, *, rho=1, distance_type='kl', min_iter=10, max_iter=100000, tol1=
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho, distance_type)
-        w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
+        w_p = prox(reg_w[1], w_p, alpha_w, rho, reg_w[0])
+        h_p = prox(reg_h[1], h_p.T, alpha_h.T, rho, reg_h[0])
+        h_p = h_p.T
+        # w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
         alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w,
                                                   alpha_h, rho)
 
         # Iteration info
-        obj_history.append(distance(v, w_p@h_p))
+        obj_history.append(distance(v, w_p@h_p, distance_type=distance_type))
         print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
         # Check convergence; save and break iteration

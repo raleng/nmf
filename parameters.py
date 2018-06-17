@@ -5,7 +5,7 @@ lambda_w = [100]
 lambda_h = [100]
 
 # either mur, anls, admm, admm_nnls, or ao_admm
-method = 'ao_admm'
+method = 'admm'
 
 # Phantom
 phantom = 'phantom2'
@@ -33,6 +33,7 @@ save_name = 'nmf_{meth}_{feat}'.format(
     feat=features,
     )
 save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
+save_dir = './results/admm_reg_test'
 
 # method specifics
 if method == 'mur':
@@ -46,11 +47,11 @@ elif method == 'anls':
     save_file = save_name
 
 elif method in {'admm', 'admm_nnls'}:
-    rho = [1, 10, 10, 100]
-    save_file = '{name}_{rho}'.format(
-        name=save_name,
-        rho=rho,
-    )
+    distance_type = 'kl'
+    rho = [1, 10, 100]
+    save_file = save_name
+    prox_w = 'nn'
+    prox_h = 'l2n'
 
 elif method == 'admm_nnls':
     rho = [1]
@@ -58,8 +59,8 @@ elif method == 'admm_nnls':
 
 elif method == 'ao_admm':
     distance_type = 'eu'
-    admm_iter = 20
-    prox_w = 'l2n'
+    admm_iter = 10
+    prox_w = 'l1n'
     prox_h = 'l2n'
 
 else:

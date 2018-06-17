@@ -13,15 +13,27 @@ import scipy.sparse.linalg as spla
 from utils import convergence_check, distance, nndsvd, save_results
 
 
-def initialize(data, features):
+def initialize(data, features, loss):
+
     w, h = nndsvd(data, features)
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
-    return w, h, dual_w, dual_h
+
+    if loss == 'kl':
+        y_dual = np.zeros_like(data)
+    else:
+        y_dual = None
+
+    return w, h, dual_w, dual_h, y_dual, y_dual
 
 
-def admm_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0):
-    # init h and dual
+def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0):
+    """ ADMM update for NMF subproblem, when one of the factors is fixed
+
+    using least-squares loss
+    """
+
+    # precompute all the things
     g = w.T @ w
     rho = np.trace(g)/k
     cho = la.cholesky(g + rho * np.eye(g.shape[0]), lower=True)
@@ -34,13 +46,53 @@ def admm_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0):
     return h, dual
 
 
-def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
+def admm_kl_update(v, v_dual, w, h, dual_h, dual_v, k, prox_type='nn',
+                   *, admm_iter=10, lambda_=0):
+    """ ADMM update for NMF subproblem, when one of the factors is fixed
 
-    if prox_type == 'l2n':
+    using Kullback-Leibler loss
+    """
+
+    # precompute all the things
+    g = w.T @ w
+    rho = np.trace(g)/k
+    cho = la.cholesky(g + rho * np.eye(g.shape[0]), lower=True)
+
+    for i in range(admm_iter):
+        h_dual = la.cho_solve((cho, True), w.T @ (v_dual + dual_v) + rho * (h + dual_h))
+        h = prox(prox_type, h_dual.T, dual_h.T, rho=rho, lambda_=lambda_)
+        y_bar = w @ h_dual - v_dual
+        v_dual = 1 / 2 * ((y_bar - 1) + np.sqrt((y_bar - 1) ** 2 + 4 * v))
+        dual_h = dual_h + h - h_dual
+        dual_v = dual_v + v_dual - w @ h_dual
+
+    return h, dual_h, v_dual, dual_v
+
+
+def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
+    """ proximal operators for
+
+    nn : non-negativity
+    l1n : l1-norm with non-negativity
+    l2n : l2-norm with non-negativity
+    """
+
+    if prox_type == 'nn':
+        diff = mat_dual - dual
+        mat = (diff >= 0) * diff
+        return mat.T
+
+    elif prox_type == 'l1n':
+        diff = mat_dual - dual
+        mat = diff - lambda_/rho
+        mat = (mat >= 0) * mat
+        return mat.T
+
+    elif prox_type == 'l2n':
         n = mat_dual.shape[0]
         k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)])
         offset = [-1, 0, 1]
-        tikh = sp.diags(k, offset) # .toarray()
+        tikh = sp.diags(k, offset)  # .toarray()
 
         # matinv = la.inv(lambda_ * tikh.T @ tikh + rho * np.eye(n))
         # mat = rho * matinv @ (mat_dual - dual)
@@ -52,17 +104,20 @@ def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
         mat = (mat >= 0) * mat
         return mat.T
 
-    elif prox_type == 'nn':
-        diff = mat_dual - dual
-        mat = (diff >= 0) * diff
-        return mat.T
-
     else:
         raise TypeError('Unknown prox_type.')
 
 
-def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_iter=10,
-            max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3, save_dir='./results/'):
+def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
+            min_iter=10, max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3,
+            save_dir='./results/'):
+    """ AO-ADMM framework for NMF
+
+    following paper by:
+    Huang, Sidiropoulos, Liavas (2015)
+    A flexible and efficient algorithmic framework for constrained matrix and tensor
+    factorization
+    """
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
@@ -86,23 +141,40 @@ def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h = initialize(v, k)
+    w, h, dual_w, dual_h, v_dual, dual_v = initialize(v, k, loss)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
 
     # Main iteration
     for i in range(max_iter):
-        h, dual_h = admm_update(v, w, h, dual_h, k,
-                                lambda_=reg_h[0],
-                                prox_type=reg_h[1],
-                                admm_iter=admm_iter)
-        w, dual_w = admm_update(v.T, h.T, w.T, dual_w.T, k,
-                                lambda_=reg_w[0],
-                                prox_type=reg_w[1],
-                                admm_iter=admm_iter)
-        w = w.T
-        dual_w = dual_w.T
+        if loss == 'ls':
+            h, dual_h = admm_ls_update(v, w, h, dual_h, k,
+                                       lambda_=reg_h[0],
+                                       prox_type=reg_h[1],
+                                       admm_iter=admm_iter)
+            w, dual_w = admm_ls_update(v.T, h.T, w.T, dual_w.T, k,
+                                       lambda_=reg_w[0],
+                                       prox_type=reg_w[1],
+                                       admm_iter=admm_iter)
+            w = w.T
+            dual_w = dual_w.T
+
+        elif loss == 'kl':
+            h, dual_h, v_dual, dual_v = admm_kl_update(v, v_dual, w, h, dual_h, dual_v, k,
+                                                       lambda_=reg_h[0],
+                                                       prox_type=reg_h[1],
+                                                       admm_iter=admm_iter)
+            w, dual_w, v_dual, dual_v = admm_kl_update(v.T, v_dual.T, h.T, w.T, dual_w.T,
+                                                       dual_v.T, k,
+                                                       lambda_=reg_h[0],
+                                                       prox_type=reg_h[1],
+                                                       admm_iter=admm_iter)
+            w = w.T
+            dual_w = dual_w.T
+
+        else:
+            raise TypeError('Unknown loss function type.')
 
         # Iteration info
         obj_history.append(distance(v, w@h, distance_type=distance_type))
