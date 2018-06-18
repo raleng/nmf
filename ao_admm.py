@@ -40,13 +40,13 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
     wty = w.T @ y
 
     for i in range(admm_iter):
-        h_dual = la.cho_solve((cho, True), wty + rho * (h + dual))
-        h = prox(prox_type, h_dual.T, dual.T, rho=rho, lambda_=lambda_)
-        dual = dual + h - h_dual
+        h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
+        h = prox(prox_type, h_aux.T, dual.T, rho=rho, lambda_=lambda_)
+        dual = dual + h - h_aux
     return h, dual
 
 
-def admm_kl_update(v, v_dual, w, h, dual_h, dual_v, k, prox_type='nn',
+def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
                    *, admm_iter=10, lambda_=0):
     """ ADMM update for NMF subproblem, when one of the factors is fixed
 
@@ -59,14 +59,19 @@ def admm_kl_update(v, v_dual, w, h, dual_h, dual_v, k, prox_type='nn',
     cho = la.cholesky(g + rho * np.eye(g.shape[0]), lower=True)
 
     for i in range(admm_iter):
-        h_dual = la.cho_solve((cho, True), w.T @ (v_dual + dual_v) + rho * (h + dual_h))
-        h = prox(prox_type, h_dual.T, dual_h.T, rho=rho, lambda_=lambda_)
-        y_bar = w @ h_dual - v_dual
-        v_dual = 1 / 2 * ((y_bar - 1) + np.sqrt((y_bar - 1) ** 2 + 4 * v))
-        dual_h = dual_h + h - h_dual
-        dual_v = dual_v + v_dual - w @ h_dual
+        # h_aux  and h update
+        h_aux = la.cho_solve((cho, True), w.T @ (v_aux + dual_v) + rho * (h + dual_h))
+        h = prox(prox_type, h_aux.T, dual_h.T, rho=rho, lambda_=lambda_)
 
-    return h, dual_h, v_dual, dual_v
+        # v_aux update
+        v_bar = w @ h_aux - dual_v
+        v_aux = 1/2 * ((v_bar-1) + np.sqrt((v_bar-1)**2 + 4*v))
+
+        # dual variables updates
+        dual_h = dual_h + h - h_aux
+        dual_v = dual_v + v_aux - w @ h_aux
+
+    return h, dual_h, v_aux, dual_v
 
 
 def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
@@ -79,13 +84,15 @@ def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
 
     if prox_type == 'nn':
         diff = mat_dual - dual
-        mat = (diff >= 0) * diff
+
+        mat = np.where(diff < 0, 0, diff)
         return mat.T
 
     elif prox_type == 'l1n':
         diff = mat_dual - dual
         mat = diff - lambda_/rho
-        mat = (mat >= 0) * mat
+
+        mat = np.where(mat < 0, 0, mat)
         return mat.T
 
     elif prox_type == 'l2n':
@@ -97,20 +104,21 @@ def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
         # matinv = la.inv(lambda_ * tikh.T @ tikh + rho * np.eye(n))
         # mat = rho * matinv @ (mat_dual - dual)
 
-        a = 1/rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
+        # a had 1/rho instead of rho?
+        a = rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
         b = mat_dual - dual
         mat = spla.spsolve(a, b)
 
-        mat = (mat >= 0) * mat
+        mat = np.where(mat < 0, 0, mat)
         return mat.T
 
     else:
         raise TypeError('Unknown prox_type.')
 
 
-def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
-            min_iter=10, max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3,
-            save_dir='./results/'):
+def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
+            reg_h=(0, 'l2n'), min_iter=10, max_iter=100000, admm_iter=10,
+            tol1=1e-3, tol2=1e-3, save_dir='./results/'):
     """ AO-ADMM framework for NMF
 
     following paper by:
@@ -121,9 +129,10 @@ def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, '
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_ao_admm_{feat}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
+    save_name = 'nmf_ao_admm_{feat}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
         dist=distance_type,
+        loss=loss_type,
         lambda_w=reg_w[0],
         prox_w=reg_w[1],
         lambda_h=reg_h[0],
@@ -133,7 +142,11 @@ def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, '
 
     # save all parameters in dict; to be saved with the results
     experiment_dict = {'k': k,
+                       'min_iter': min_iter,
                        'max_iter': max_iter,
+                       'admm_iter': admm_iter,
+                       'tol1': tol1,
+                       'tol2': tol2,
                        }
 
     # used for cmd line output; only show reasonable amount of decimal places
@@ -141,14 +154,14 @@ def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, '
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h, v_dual, dual_v = initialize(v, k, loss)
+    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
 
     # Main iteration
     for i in range(max_iter):
-        if loss == 'ls':
+        if loss_type == 'ls':
             h, dual_h = admm_ls_update(v, w, h, dual_h, k,
                                        lambda_=reg_h[0],
                                        prox_type=reg_h[1],
@@ -160,18 +173,20 @@ def ao_admm(v, k, *, distance_type='eu', loss='ls', reg_w=(0, 'nn'), reg_h=(0, '
             w = w.T
             dual_w = dual_w.T
 
-        elif loss == 'kl':
-            h, dual_h, v_dual, dual_v = admm_kl_update(v, v_dual, w, h, dual_h, dual_v, k,
-                                                       lambda_=reg_h[0],
-                                                       prox_type=reg_h[1],
-                                                       admm_iter=admm_iter)
-            w, dual_w, v_dual, dual_v = admm_kl_update(v.T, v_dual.T, h.T, w.T, dual_w.T,
-                                                       dual_v.T, k,
-                                                       lambda_=reg_h[0],
-                                                       prox_type=reg_h[1],
-                                                       admm_iter=admm_iter)
+        elif loss_type == 'kl':
+            h, dual_h, v_aux, dual_v = admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k,
+                                                      lambda_=reg_h[0],
+                                                      prox_type=reg_h[1],
+                                                      admm_iter=admm_iter)
+            w, dual_w, v_aux, dual_v = admm_kl_update(v.T, v_aux.T, dual_v.T, h.T, w.T,
+                                                      dual_w.T, k,
+                                                      lambda_=reg_h[0],
+                                                      prox_type=reg_h[1],
+                                                      admm_iter=admm_iter)
             w = w.T
             dual_w = dual_w.T
+            v_aux = v_aux.T
+            dual_v = dual_v.T
 
         else:
             raise TypeError('Unknown loss function type.')

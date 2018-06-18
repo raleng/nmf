@@ -21,6 +21,7 @@ def distance(x, wh, distance_type='kl'):
     if distance_type == 'kl':
         """ Kullback-Leibler divergence """
         value = x * np.log(x / wh)
+        value = np.where(value == np.inf, 0, value)
         value = np.where(np.isnan(value), 0, value)
         value = np.sum(value - x + wh)
     elif distance_type == 'eu':

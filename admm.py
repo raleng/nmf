@@ -48,31 +48,31 @@ def x_update(v, wh, alpha_x, rho, distance_type='kl'):
     """ ADMM update of X """
     if distance_type == 'kl':
         value = rho * wh - alpha_x - 1
-        x = value + np.sqrt(value**2 + 4*rho*v)
-        x /= 2*rho
+        x = value + np.sqrt(value**2 + 4 * rho * v)
+        x /= 2 * rho
     elif distance_type == 'eu':
-        x = wh + (v - wh)
+        x = v
     else:
         raise KeyError('Unknown distance type.')
 
     return x
 
 
-def prox(prox_type, mat_dual, dual, rho=None, lambda_=None):
+def prox(prox_type, mat_aux, dual, rho=None, lambda_=None):
     if prox_type == 'nn':
-        return np.maximum(mat_dual + 1/rho * dual, 0)
+        return np.maximum(mat_aux + 1/rho*dual, 0)
 
     elif prox_type == 'l2n':
-        n = mat_dual.shape[0]
+        n = mat_aux.shape[0]
         k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)])
         offset = [-1, 0, 1]
         tikh = sp.diags(k, offset)  # .toarray()
 
-        a = rho * (lambda_ * tikh.T @ tikh + 1/rho * sp.eye(n))
-        b = mat_dual - dual/rho
+        a = (lambda_ * tikh.T @ tikh - rho * sp.eye(n))
+        b = rho * mat_aux - dual
         mat = spla.spsolve(a, b)
 
-        mat = (mat >= 0) * mat
+        mat = np.where(mat < 0, 0, mat)
         return mat
 
 
@@ -111,9 +111,10 @@ def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_ao_admm_{feat}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
+    save_name = 'nmf_ao_admm_{feat}_{rho}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
         dist=distance_type,
+        rho=rho,
         lambda_w=reg_w[0],
         prox_w=reg_w[1],
         lambda_h=reg_h[0],
@@ -145,10 +146,10 @@ def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
         wh = w @ h
 
         x = x_update(v, wh, alpha_x, rho, distance_type)
-        w_p = prox(reg_w[1], w_p, alpha_w, rho, reg_w[0])
-        h_p = prox(reg_h[1], h_p.T, alpha_h.T, rho, reg_h[0])
+        w_p = prox(reg_w[1], w, alpha_w, rho=rho, lambda_=reg_w[0])
+        h_p = prox(reg_h[1], h.T, alpha_h.T, rho=rho, lambda_=reg_h[0])
         h_p = h_p.T
-        # w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
+        #w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
         alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w,
                                                   alpha_h, rho)
 

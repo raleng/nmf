@@ -2,7 +2,7 @@
 features = [3]
 use_fcnnls = False
 lambda_w = [100]
-lambda_h = [100]
+lambda_h = [1000]
 
 # either mur, anls, admm, admm_nnls, or ao_admm
 method = 'admm'
@@ -48,20 +48,29 @@ elif method == 'anls':
 
 elif method in {'admm', 'admm_nnls'}:
     distance_type = 'kl'
-    rho = [1, 10, 100]
-    save_file = save_name
+    rho = [10]
     prox_w = 'nn'
     prox_h = 'l2n'
+    if prox_w == 'nn':
+        lambda_w = [0]
+    if prox_h == 'nn':
+        lambda_h = [0]
 
 elif method == 'admm_nnls':
     rho = [1]
     save_file = save_name
 
 elif method == 'ao_admm':
-    distance_type = 'eu'
-    admm_iter = 10
+    distance_type = 'kl'
+    loss_type = 'kl'
+    admm_iter = 20
     prox_w = 'l1n'
     prox_h = 'l2n'
+
+    if prox_w == 'nn':
+        lambda_w = [0]
+    if prox_h == 'nn':
+        lambda_h = [0]
 
 else:
     raise Exception('Unknown method: {}.'.format(method))

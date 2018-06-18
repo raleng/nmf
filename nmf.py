@@ -19,6 +19,7 @@ def main(param_file='parameters'):
         print('No parameter file found.')
         return
 
+    # Loading data
     if params.phantom_version == 'noise':
         load_var = 'sinodata_noise'
     elif params.phantom_version == 'exact':
@@ -26,7 +27,6 @@ def main(param_file='parameters'):
     else:
         raise Exception('Unknown dataset: {}.'.format(params.phantom_version))
 
-    # Loading data
     try:
         if load_var == 'LOAD_MSOT':
             data = loadme.msot(params.load_file)
@@ -130,6 +130,7 @@ def main(param_file='parameters'):
                 data,
                 features,
                 distance_type=params.distance_type,
+                loss_type=params.loss_type,
                 reg_w=(lambda_w, params.prox_w),
                 reg_h=(lambda_h, params.prox_h),
                 min_iter=params.min_iter,
