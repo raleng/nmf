@@ -1,15 +1,15 @@
+# either mur, anls, admm, admm_nnls, or ao_admm
+method = 'ao_admm'
+
 # NMF Variables
-features = [3]
+features = [6]
 use_fcnnls = False
 lambda_w = [100]
-lambda_h = [1000]
-
-# either mur, anls, admm, admm_nnls, or ao_admm
-method = 'admm'
+lambda_h = [100]
 
 # Phantom
 phantom = 'phantom2'
-phantom_version = 'noise'  # exact / noise
+phantom_version = 'exact'  # exact / noise
 
 # Iteration/Algorithm Variables
 min_iter = 100
@@ -33,7 +33,7 @@ save_name = 'nmf_{meth}_{feat}'.format(
     feat=features,
     )
 save_dir = './results/{}_{}/{}'.format(phantom, phantom_version, method)
-save_dir = './results/admm_reg_test'
+#save_dir = './results/admm_reg_test'
 
 # method specifics
 if method == 'mur':
@@ -61,10 +61,10 @@ elif method == 'admm_nnls':
     save_file = save_name
 
 elif method == 'ao_admm':
-    distance_type = 'kl'
-    loss_type = 'kl'
-    admm_iter = 20
-    prox_w = 'l1n'
+    distance_type = 'eu'
+    loss_type = 'ls'
+    admm_iter = 10
+    prox_w = 'nn'
     prox_h = 'l2n'
 
     if prox_w == 'nn':

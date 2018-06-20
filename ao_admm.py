@@ -5,6 +5,7 @@ import better_exceptions
 
 # math imports
 import numpy as np
+from numpy.linalg import norm
 import scipy.linalg as la
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
@@ -27,6 +28,19 @@ def initialize(data, features, loss):
     return w, h, dual_w, dual_h, y_dual, y_dual
 
 
+def terminate(mat, mat_prev, aux, dual, tol=1e-2):
+
+    # relative primal residual
+    r = norm(mat - aux)/norm(mat)
+    # relative dual residual
+    s = norm(mat - mat_prev)/norm(dual)
+
+    if r < tol and s < tol:
+        return True
+    else:
+        return False
+
+
 def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0):
     """ ADMM update for NMF subproblem, when one of the factors is fixed
 
@@ -41,8 +55,14 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
 
     for i in range(admm_iter):
         h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
+        h_prev = h.copy()
         h = prox(prox_type, h_aux.T, dual.T, rho=rho, lambda_=lambda_)
         dual = dual + h - h_aux
+
+        if terminate(h, h_prev, h_aux, dual):
+            print('ADMM break after {} iterations.'.format(i))
+            break
+
     return h, dual
 
 
@@ -61,6 +81,7 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
     for i in range(admm_iter):
         # h_aux  and h update
         h_aux = la.cho_solve((cho, True), w.T @ (v_aux + dual_v) + rho * (h + dual_h))
+        h_prev = h.copy()
         h = prox(prox_type, h_aux.T, dual_h.T, rho=rho, lambda_=lambda_)
 
         # v_aux update
@@ -70,6 +91,10 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
         # dual variables updates
         dual_h = dual_h + h - h_aux
         dual_v = dual_v + v_aux - w @ h_aux
+
+        if terminate(h, h_prev, h_aux, dual_h):
+            print('ADMM break after {} iterations.'.format(i))
+            break
 
     return h, dual_h, v_aux, dual_v
 
@@ -105,7 +130,7 @@ def prox(prox_type, mat_dual, dual, *, rho=None, lambda_=None):
         # mat = rho * matinv @ (mat_dual - dual)
 
         # a had 1/rho instead of rho?
-        a = rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
+        a = 1/rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
         b = mat_dual - dual
         mat = spla.spsolve(a, b)
 
