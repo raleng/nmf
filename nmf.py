@@ -44,8 +44,9 @@ def main(param_file='parameters'):
         print('Data was 3D. Reshaped to 2D.')
 
     # Logging info for FCNNLS usage
-    if params.use_fcnnls and params.method in {'anls, admm_nnls'}:
-        print('Using FCNNLS.')
+    if params.method in {'anls', 'admm_nnls'}:
+        if params.use_fcnnls:
+            print('Using FCNNLS.')
 
     # Method call
     if params.method == 'mur':
@@ -140,5 +141,6 @@ def main(param_file='parameters'):
                 tol2=params.tol2,
                 save_dir=params.save_dir,
             )
+
     else:
         raise KeyError('Unknown method type.')

@@ -33,7 +33,7 @@ def normalize(w):
 #     return norms
 
 
-def w_update(distance_type, x, w, h, wh):
+def w_update(distance_type, x, w, h, wh, lambda_w=0):
     """ MUR Update and normalization """
 
     # Update step
@@ -47,15 +47,15 @@ def w_update(distance_type, x, w, h, wh):
         # a = w * ((x / (wh+1e-9)) @ h.T)
         # w = 2 * a / (b + np.sqrt(b * b + 4 * lambda_w * a))
     elif distance_type == 'eu':
-        # w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
-        w = w * (x @ h.T) / (wh @ h.T + 1e-9)
+        w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
+        # w = w * (x @ h.T) / (wh @ h.T + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
     return w
 
 
-def h_update(distance_type, x, w, h, wh):
+def h_update(distance_type, x, w, h, wh, lambda_h=0):
     """ MUR Update with normalization """
 
     # Update step
@@ -69,8 +69,9 @@ def h_update(distance_type, x, w, h, wh):
         # d = lambda_h1 * np.ones(h.shape) + w.T @ np.ones((x.shape[0], x.shape[1]))
         # h = 2 * c / (d + np.sqrt(d * d + 4 * lambda_h2 * c))
     elif distance_type == 'eu':
-        # h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
-        h = h * (w.T @ x) / (w.T @ wh + 1e-9)
+        h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
+
+        # h = h * (w.T @ x) / (w.T @ wh + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
@@ -98,9 +99,11 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_mur_{feat}_{dist}'.format(
+    save_name = 'nmf_mur_{feat}_{dist}_{l_w}_{l_h}'.format(
         feat=k,
         dist=distance_type,
+        l_w=lambda_w,
+        l_h=lambda_h,
     )
     save_str = os.path.join(save_dir, save_name)
 
@@ -143,16 +146,16 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     for i in range(max_iter):
 
         # Update step
-        w = w_update(distance_type, x, w, h, wh)
+        w = w_update(distance_type, x, w, h, wh, lambda_w)
         # w = normalize(w)
-        h = h_update(distance_type, x, w, h, w @ h)
+        h = h_update(distance_type, x, w, h, w @ h, lambda_h)
         # Normalizing
         # h = h / normalize(norm, h)[:, None]
         wh = w @ h
 
         # Iteration info
         obj_history.append(distance(x, wh, distance_type))
-        logging.info('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
+        print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
         # Check convergence; save and break iteration
         if i > min_iter:

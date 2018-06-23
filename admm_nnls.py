@@ -12,8 +12,6 @@ from scipy import optimize
 import fcnnls
 from utils import convergence_check, distance, nndsvd, save_results
 
-# TODO scaling! normalize W, H accordingly
-
 
 def initialize(data, features):
     """ Initializing variables """
@@ -163,7 +161,7 @@ def admm_nnls(v, k, *, rho=1, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter
     for i in range(max_iter):
 
         # Update step
-        rho = find_rho(x, alpha_x, rho)
+        # rho = find_rho(x, alpha_x, rho)
         w = w_update(x, h, alpha_x, lambda_w, rho, use_fcnnls=use_fcnnls)
         h = h_update(x, w, alpha_x, lambda_h, rho, use_fcnnls=use_fcnnls)
         wh = w @ h
