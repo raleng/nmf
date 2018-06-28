@@ -79,7 +79,7 @@ def h_update(distance_type, x, w, h, wh, lambda_h=0):
 
 
 def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, tol2=1e-5,
-        lambda_w=0.0, lambda_h=0.0, save_dir='./results/'):
+        lambda_w=0.0, lambda_h=0.0, nndsvd_init=False, save_dir='./results/'):
     """ NMF with MUR
 
     Expects following arguments:
@@ -94,6 +94,7 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     tol2 -- FLOAT: convergence tolerance
     lambda_w -- FLOAT: regularization parameter for w-Update
     lambda_h -- FLOAT: regularization parameter for h-Update
+    nndsvd_init -- BOOL: if True, use NNDSVD initialization
     save_dir -- STRING: folder to which to save
     """
 
@@ -105,6 +106,7 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         l_w=lambda_w,
         l_h=lambda_h,
     )
+    save_name += '_nndsvd' if nndsvd_init else '_random'
     save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
@@ -133,7 +135,11 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     # x = x/np.max(x[:])
 
     # initialize W and H
-    w, h = nndsvd(x, k)
+    if nndsvd_init:
+        w, h = nndsvd(x, k)
+    else:
+        w = np.abs(np.random.randn(x.shape[0], k))
+        h = np.abs(np.random.randn(k, x.shape[1]))
 
     # precomputing w @ h
     # saves one computation each iteration

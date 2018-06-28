@@ -5,29 +5,34 @@ import better_exceptions
 
 # math imports
 import numpy as np
-from numpy.linalg import norm
+from numpy.linalg import norm, solve
 import scipy.linalg as la
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 # personal imports
 from utils import convergence_check, distance, nndsvd, save_results
+from misc import showme
+
+import pdb
 
 
 def initialize(data, features, loss):
 
     w, h = nndsvd(data, features)
-    w = np.abs(np.random.randn(data.shape[0], features))
-    h = np.abs(np.random.randn(features, data.shape[1]))
+    # w = np.abs(np.random.randn(data.shape[0], features))
+    # h = np.abs(np.random.randn(features, data.shape[1]))
+    w_aux = np.zeros_like(w)
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
 
     if loss == 'kl':
         y_dual = np.zeros_like(data)
     else:
-        y_dual = None
+        # y_dual = None
+        y_dual = np.zeros_like(data)
 
-    return w, h, dual_w, dual_h, y_dual, y_dual
+    return w, h, w_aux, dual_w, dual_h, w@h, y_dual
 
 
 def terminate(mat, mat_prev, aux, dual, tol=1e-2):
@@ -59,13 +64,13 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
         h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
         h_prev = h.copy()
         h = prox(prox_type, h_aux.T, dual.T, rho=rho, lambda_=lambda_)
-        print(np.max(h))
         dual = dual + h - h_aux
 
         if terminate(h, h_prev, h_aux, dual):
             print('ADMM break after {} iterations.'.format(i))
             break
 
+    showme.im1d(h.T)
     return h, dual
 
 
@@ -100,6 +105,63 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
             break
 
     return h, dual_h, v_aux, dual_v
+
+
+def admm_local_sparsity(v, v_aux, dual_v, w_aux, dual_w, h, k, admm_iter=10):
+    g = h @ h.T
+    rho1 = np.trace(g)/k
+    rho2 = rho1
+
+    for i in range(admm_iter):
+        # H update
+        a = rho1 * np.eye(g.shape[0]) + rho2 * g
+        b = rho1 * (w_aux - dual_w) + rho2 * (v_aux - dual_v) @ h.T
+        w = b @ np.linalg.inv(a)
+        w = np.where(w < 0, 0, w)
+        #showme.im2d(w.reshape((257, 256, k), order='F'))
+
+        # H tilde update
+        w_aux = local_sparsity(w_aux, dual_w, lambda_=0.1, rho=rho1, upper_bound=0.01)
+
+        # Y tilde update
+        a = sp.eye(v.shape[0]) - rho2 * sp.eye(v.shape[0])
+        b = v - rho2 * (w @ h + dual_v)
+        v_aux = spla.spsolve(a, b)
+
+        # U and V update
+        dual_w = dual_w - (w_aux - w)
+        dual_v = dual_v - (v_aux - w@h)
+
+    showme.im2d(w.reshape((257, 256, k), order='F'))
+    return w, w_aux, dual_w, v_aux, dual_v
+
+
+def local_sparsity(mat_aux, dual, lambda_, rho, upper_bound):
+    mat = np.zeros_like(mat_aux)
+
+    pos = mat_aux + dual - lambda_ / rho * np.ones_like(mat_aux)
+    pos = np.where(pos < 0, 0, pos)
+
+    for i in range(pos.shape[0]):
+        if np.sum(pos[i, :]) <= upper_bound:
+            mat[i, :] = pos[i, :]
+        else:
+            ones = np.ones_like(mat[i, :])
+
+            val = -np.sort(-(mat_aux[i, :] - dual[i, :]))
+            for j in range(1, mat_aux.shape[1]+1):
+                test = rho * val[j-1] + lambda_ - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
+                if test < 0:
+                    index_count = j-1
+                    break
+            else:
+                index_count = mat_aux.shape[1] + 1
+
+            theta = rho / index_count * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
+            shrink = mat_aux[i, :] + dual[i, :] - lambda_ / rho * ones - theta / rho * ones
+            mat[i, :] = np.where(shrink < 0, 0, shrink)
+
+    return mat
 
 
 def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
@@ -212,7 +274,7 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_ao_admm_{feat}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
+    save_name = 'nmf_local_{feat}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
         dist=distance_type,
         loss=loss_type,
@@ -237,7 +299,7 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
+    w, h, w_aux, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
@@ -249,14 +311,9 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
                                        lambda_=reg_h[0],
                                        prox_type=reg_h[1],
                                        admm_iter=admm_iter)
-            print('did h')
-            w, dual_w = admm_ls_update(v.T, h.T, w.T, dual_w.T, k,
-                                       lambda_=reg_w[0],
-                                       prox_type=reg_w[1],
-                                       admm_iter=admm_iter)
-            print(np.min(w), np.max(w))
-            w = w.T
-            dual_w = dual_w.T
+            w, w_aux, dual_w, v_aux, dual_v = admm_local_sparsity(v, v_aux, dual_v,
+                                                                  w_aux, dual_w, h, k,
+                                                                  admm_iter=admm_iter)
 
         elif loss_type == 'kl':
             h, dual_h, v_aux, dual_v = admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k,

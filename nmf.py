@@ -3,8 +3,6 @@ import begin
 from importlib import import_module
 from itertools import product
 
-import numpy as np
-
 from misc import loadme
 
 
@@ -40,7 +38,7 @@ def main(param_file='parameters'):
 
     # Transform data dimensions
     if data.ndim == 3:
-        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]), order='F')
+        data = data.reshape((data.shape[0]*data.shape[1], data.shape[2]), order='F')
         print('Data was 3D. Reshaped to 2D.')
 
     # Logging info for FCNNLS usage
@@ -64,6 +62,7 @@ def main(param_file='parameters'):
                 tol2=params.tol2,
                 lambda_w=lambda_w,
                 lambda_h=lambda_h,
+                nndsvd_init=params.nndsvd_init,
                 save_dir=params.save_dir,
             )
     elif params.method == 'anls':
@@ -124,10 +123,30 @@ def main(param_file='parameters'):
 
     elif params.method == 'ao_admm':
         import ao_admm
-        for features, lambda_w, lambda_h, in product(params.features,
+        for features, lambda_w, lambda_h in product(params.features,
                                                      params.lambda_w,
                                                      params.lambda_h):
             ao_admm.ao_admm(
+                data,
+                features,
+                distance_type=params.distance_type,
+                loss_type=params.loss_type,
+                reg_w=(lambda_w, params.prox_w),
+                reg_h=(lambda_h, params.prox_h),
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                admm_iter=params.admm_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+            )
+
+    elif params.method == 'ao_admm_local':
+        import ao_admm_local_sparsity
+        for features, lambda_w, lambda_h in product(params.features,
+                                                    params.lambda_w,
+                                                    params.lambda_h):
+            ao_admm_local_sparsity.ao_admm(
                 data,
                 features,
                 distance_type=params.distance_type,
