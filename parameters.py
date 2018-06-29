@@ -4,7 +4,7 @@ method = 'ao_admm_local'
 # NMF Variables
 features = [5]
 lambda_w = [1]
-lambda_h = [100]
+lambda_h = [1]
 
 # Phantom
 phantom = 'phantom1'
@@ -53,7 +53,7 @@ elif method == 'ao_admm':
 
 elif method == 'ao_admm_local':
     distance_type = 'eu'
-    loss_type = 'ls'
+    loss_type = 'kl'
     admm_iter = 10
 
     prox_w = 'nn'

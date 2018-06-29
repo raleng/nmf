@@ -20,8 +20,8 @@ import pdb
 def initialize(data, features, loss):
 
     w, h = nndsvd(data, features)
-    # w = np.abs(np.random.randn(data.shape[0], features))
-    # h = np.abs(np.random.randn(features, data.shape[1]))
+    w = np.abs(np.random.randn(data.shape[0], features))
+    h = np.abs(np.random.randn(features, data.shape[1]))
     w_aux = np.zeros_like(w)
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
@@ -70,7 +70,7 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
             print('ADMM break after {} iterations.'.format(i))
             break
 
-    showme.im1d(h.T)
+    # showme.im1d(h.T)
     return h, dual
 
 
@@ -107,10 +107,19 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
     return h, dual_h, v_aux, dual_v
 
 
-def admm_local_sparsity(v, v_aux, dual_v, w_aux, dual_w, h, k, admm_iter=10):
+def admm_local_sparsity(v, v_aux, dual_v, w_aux, dual_w, h, k, admm_iter=20):
     g = h @ h.T
     rho1 = np.trace(g)/k
     rho2 = rho1
+
+    eps = {'abs': la.norm(v),
+           'rel': 1e-3}
+    eps['pri1'] = np.sqrt(w_aux.shape[0]*w_aux.shape[1]) * eps['abs']
+    eps['pri2'] = np.sqrt(w_aux.shape[0]*h.shape[1]) * eps['abs']
+    eps['dual'] = eps['pri1']
+
+    tau = {'incr1': 2, 'decr1': 2, 'incr2': 2, 'decr2': 2}
+    eta1, eta2 = 1, 1
 
     for i in range(admm_iter):
         # H update
@@ -118,21 +127,32 @@ def admm_local_sparsity(v, v_aux, dual_v, w_aux, dual_w, h, k, admm_iter=10):
         b = rho1 * (w_aux - dual_w) + rho2 * (v_aux - dual_v) @ h.T
         w = b @ np.linalg.inv(a)
         w = np.where(w < 0, 0, w)
-        #showme.im2d(w.reshape((257, 256, k), order='F'))
 
         # H tilde update
-        w_aux = local_sparsity(w_aux, dual_w, lambda_=0.1, rho=rho1, upper_bound=0.01)
+        w_aux_old = w_aux.copy()
+        w_aux = local_sparsity(w_aux, dual_w, lambda_=1, rho=rho1, upper_bound=1)
 
         # Y tilde update
         a = sp.eye(v.shape[0]) - rho2 * sp.eye(v.shape[0])
         b = v - rho2 * (w @ h + dual_v)
+        v_aux_old = v_aux.copy()
         v_aux = spla.spsolve(a, b)
 
         # U and V update
         dual_w = dual_w - (w_aux - w)
         dual_v = dual_v - (v_aux - w@h)
 
+        # update residuals
+        eps, r1, r2, s = update_residuals(eps, rho1, rho2, v, v_aux, v_aux_old, dual_v, w,
+                                          w_aux, w_aux_old, dual_w, h, tau, eta1, eta2)
+
+        if la.norm(r1) >= eps['pri1'] and \
+            la.norm(r2) >= eps['pri2'] and \
+            la.norm(s) >= eps['dual']:
+            break
+
     showme.im2d(w.reshape((257, 256, k), order='F'))
+
     return w, w_aux, dual_w, v_aux, dual_v
 
 
@@ -150,18 +170,52 @@ def local_sparsity(mat_aux, dual, lambda_, rho, upper_bound):
 
             val = -np.sort(-(mat_aux[i, :] - dual[i, :]))
             for j in range(1, mat_aux.shape[1]+1):
-                test = rho * val[j-1] + lambda_ - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
+                test = rho * val[j-1] + lambda_ \
+                       - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
                 if test < 0:
                     index_count = j-1
                     break
             else:
                 index_count = mat_aux.shape[1] + 1
 
-            theta = rho / index_count * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
-            shrink = mat_aux[i, :] + dual[i, :] - lambda_ / rho * ones - theta / rho * ones
+            theta = rho / index_count \
+                    * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
+            shrink = mat_aux[i, :] + dual[i, :] - lambda_/rho * ones - theta / rho * ones
             mat[i, :] = np.where(shrink < 0, 0, shrink)
 
     return mat
+
+
+def update_residuals(eps, rho1, rho2, v, v_aux, v_aux_old, dual_v, w, w_aux, w_aux_old,
+                     dual_w, h, tau, eta1, eta2):
+
+    # Residuals
+    s = rho1 * (w_aux_old - w_aux) + rho2 * (v_aux_old - v_aux) @ h.T
+    r1 = rho1 * (w_aux - w)
+    r2 = rho2 * (v_aux - w@h)
+
+    if la.norm(r1) > eta1 * la.norm(s):
+        rho1 = rho1 * tau['incr1']
+        dual_w = dual_w / tau['incr1']
+    elif la.norm(s) > eta1 * la.norm(r1):
+        rho1 = rho1 / tau['decr1']
+        dual_w = dual_w * tau['decr1']
+
+    if la.norm(r2) > eta2 * la.norm(s):
+        rho2 = rho2 * tau['incr2']
+        dual_v = dual_v / tau['incr2']
+    elif la.norm(s) > eta2 * la.norm(r2):
+        rho2 = rho2 / tau['decr2']
+        dual_v = dual_v * tau['decr2']
+
+    eps['pri1'] = np.sqrt(w.shape[0]*w.shape[1]) * eps['abs'] \
+                  + eps['rel'] * max(la.norm(w), la.norm(w_aux), 0)
+    eps['pri2'] = np.sqrt(w.shape[0]*h.shape[1]) * eps['abs'] \
+                  + eps['rel'] * max(la.norm(w@h), la.norm(v_aux), 0)
+    eps['dual'] = np.sqrt(w.shape[0]*w.shape[1]) * eps['abs'] \
+                  + eps['rel'] * la.norm(rho1 * dual_w + rho2 * dual_v @ h.T)
+
+    return eps, r1, r2, s
 
 
 def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
@@ -217,15 +271,18 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
 
                 val = -np.sort(-(mat_aux[i, :] - dual[i, :]))
                 for j in range(1, mat_aux.shape[1]+1):
-                    test = rho * val[j-1] + lambda_ - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
+                    test = rho * val[j-1] + lambda_ \
+                           - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
                     if test < 0:
                         index_count = j-1
                         break
                 else:
                     index_count = mat_aux.shape[1] + 1
 
-                theta = rho / index_count * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
-                shrink = mat_aux[i, :] + dual[i, :] - lambda_ / rho * ones - theta / rho * ones
+                theta = rho / index_count \
+                        * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
+                shrink = mat_aux[i, :] + dual[i, :] - lambda_ / rho * ones \
+                         - theta / rho * ones
                 mat[i, :] = np.where(shrink < 0, 0, shrink)
 
         return mat.T
@@ -320,15 +377,9 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
                                                       lambda_=reg_h[0],
                                                       prox_type=reg_h[1],
                                                       admm_iter=admm_iter)
-            w, dual_w, v_aux, dual_v = admm_kl_update(v.T, v_aux.T, dual_v.T, h.T, w.T,
-                                                      dual_w.T, k,
-                                                      lambda_=reg_h[0],
-                                                      prox_type=reg_h[1],
-                                                      admm_iter=admm_iter)
-            w = w.T
-            dual_w = dual_w.T
-            v_aux = v_aux.T
-            dual_v = dual_v.T
+            w, w_aux, dual_w, v_aux, dual_v = admm_local_sparsity(v, v_aux, dual_v,
+                                                                  w_aux, dual_w, h, k,
+                                                                  admm_iter=admm_iter)
 
         else:
             raise TypeError('Unknown loss function type.')
@@ -346,7 +397,7 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
                 break
 
         # save every XX iterations
-        if i % 100 == 0:
+        if i % 1 == 0:
             save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
