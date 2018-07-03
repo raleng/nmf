@@ -1,10 +1,10 @@
 # either mur, anls, admm, admm_nnls, or ao_admm
-method = 'ao_admm_local'
+method = 'anls'
 
 # NMF Variables
 features = [5]
-lambda_w = [1]
-lambda_h = [1]
+lambda_w = [0]
+lambda_h = range(0, 10)
 
 # Phantom
 phantom = 'phantom1'
@@ -19,7 +19,7 @@ tol2 = 1e-3
 # method specifics
 if method == 'mur':
     distance_type = 'eu'
-    nndsvd_init = True
+    nndsvd_init = False
 
 elif method == 'anls':
     use_fcnnls = False

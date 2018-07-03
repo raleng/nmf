@@ -143,12 +143,12 @@ def admm_local_sparsity(v, v_aux, dual_v, w_aux, dual_w, h, k, admm_iter=20):
         dual_v = dual_v - (v_aux - w@h)
 
         # update residuals
-        eps, r1, r2, s = update_residuals(eps, rho1, rho2, v, v_aux, v_aux_old, dual_v, w,
+        eps, r1, r2, s = update_residuals(eps, rho1, rho2, v_aux, v_aux_old, dual_v, w,
                                           w_aux, w_aux_old, dual_w, h, tau, eta1, eta2)
 
         if la.norm(r1) >= eps['pri1'] and \
-            la.norm(r2) >= eps['pri2'] and \
-            la.norm(s) >= eps['dual']:
+                la.norm(r2) >= eps['pri2'] and \
+                la.norm(s) >= eps['dual']:
             break
 
     showme.im2d(w.reshape((257, 256, k), order='F'))
@@ -186,7 +186,7 @@ def local_sparsity(mat_aux, dual, lambda_, rho, upper_bound):
     return mat
 
 
-def update_residuals(eps, rho1, rho2, v, v_aux, v_aux_old, dual_v, w, w_aux, w_aux_old,
+def update_residuals(eps, rho1, rho2, v_aux, v_aux_old, dual_v, w, w_aux, w_aux_old,
                      dual_w, h, tau, eta1, eta2):
 
     # Residuals
@@ -301,15 +301,18 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
                 val = mat_aux[:, i] - dual[:, 1]
                 val = -np.sort(-val)
                 for j in range(1, mat_aux.shape[0]+1):
-                    test = rho * val[j-1] + lambda_ - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
+                    test = rho * val[j-1] + lambda_ \
+                           - rho/j * (np.sum(val[:j]) + lambda_/rho - upper_bound)
                     if test < 0:
                         index_count = j-1
                         break
                 else:
                     index_count = mat_aux.shape[0] + 1
-                theta = rho / index_count * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
+                theta = rho / index_count \
+                        * (np.sum(val[:(index_count+1)]) + lambda_ / rho - upper_bound)
                 theta = theta if theta > 0 else 0
-                shrink = mat_aux[:, i] + dual[:, i] - lambda_ / rho * ones - theta / rho * ones
+                shrink = mat_aux[:, i] + dual[:, i] - lambda_ / rho * ones \
+                         - theta / rho * ones
                 mat[:, i] = np.where(shrink < 0, 0, shrink)
 
         return mat.T

@@ -40,7 +40,7 @@ def w_update(distance_type, x, w, h, wh, lambda_w=0):
     if distance_type == 'kl':
         pass
         w = w * ((x / (wh+1e-9)) @ h.T)
-        w /= np.ones((x.shape[0], x.shape[1])) @ h.T
+        w /= np.ones_like(x) @ h.T
 
         # Alternate update?
         # b = np.ones((x.shape[0], x.shape[1])) @ h.T
@@ -62,7 +62,7 @@ def h_update(distance_type, x, w, h, wh, lambda_h=0):
     if distance_type == 'kl':
         pass
         h = h * (w.T @ (x / (wh+1e-9)))
-        h /= w.T @ np.ones((x.shape[0], x.shape[1]))
+        h /= w.T @ np.ones_like(x)
 
         # Alternative Update?
         # c = h * (w.T @ (x / (wh+1e-9)))
