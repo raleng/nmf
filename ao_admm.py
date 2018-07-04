@@ -14,18 +14,18 @@ import scipy.sparse.linalg as spla
 from utils import convergence_check, distance, nndsvd, save_results
 
 
-def initialize(data, features, loss):
+def initialize(data, features, nndsvd_init):
 
-    w, h = nndsvd(data, features)
-    w = np.abs(np.random.randn(data.shape[0], features))
-    h = np.abs(np.random.randn(features, data.shape[1]))
+    if nndsvd_init[0]:
+        w, h = nndsvd(data, features, variant=nndsvd_init[1])
+    else:
+        w = np.abs(np.random.randn(data.shape[0], features))
+        h = np.abs(np.random.randn(features, data.shape[1]))
+
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
 
-    if loss == 'kl':
-        y_dual = np.zeros_like(data)
-    else:
-        y_dual = None
+    y_dual = np.zeros_like(data)
 
     return w, h, dual_w, dual_h, y_dual, y_dual
 
@@ -59,7 +59,6 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
         h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
         h_prev = h.copy()
         h = prox(prox_type, h_aux, dual, rho=rho, lambda_=lambda_)
-        print(np.max(h))
         dual = dual + h - h_aux
 
         if terminate(h, h_prev, h_aux, dual):
@@ -199,9 +198,9 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
         raise TypeError('Unknown prox_type.')
 
 
-def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
-            reg_h=(0, 'l2n'), min_iter=10, max_iter=100000, admm_iter=10,
-            tol1=1e-3, tol2=1e-3, save_dir='./results/'):
+def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_iter=10,
+            max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3,
+            nndsvd_init=(True, 'zero'), save_dir='./results/'):
     """ AO-ADMM framework for NMF
 
     following paper by:
@@ -212,15 +211,18 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_ao_admm_{feat}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
-        feat=k,
+    save_name = 'nmf_ao_admm_{k}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
+        k=k,
         dist=distance_type,
-        loss=loss_type,
         lambda_w=reg_w[0],
         prox_w=reg_w[1],
         lambda_h=reg_h[0],
         prox_h=reg_h[1],
     )
+    if nndsvd_init[0]:
+        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
+    else:
+        save_name += '_random'
     save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
@@ -237,28 +239,26 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
+    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, distance_type)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
 
     # Main iteration
     for i in range(max_iter):
-        if loss_type == 'ls':
+        if distance_type == 'eu':
             h, dual_h = admm_ls_update(v, w, h, dual_h, k,
                                        lambda_=reg_h[0],
                                        prox_type=reg_h[1],
                                        admm_iter=admm_iter)
-            print('did h')
             w, dual_w = admm_ls_update(v.T, h.T, w.T, dual_w.T, k,
                                        lambda_=reg_w[0],
                                        prox_type=reg_w[1],
                                        admm_iter=admm_iter)
-            print(np.min(w), np.max(w))
             w = w.T
             dual_w = dual_w.T
 
-        elif loss_type == 'kl':
+        elif distance_type == 'kl':
             h, dual_h, v_aux, dual_v = admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k,
                                                       lambda_=reg_h[0],
                                                       prox_type=reg_h[1],
@@ -289,7 +289,7 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
                 break
 
         # save every XX iterations
-        if i % 100 == 0:
+        if i % 20 == 0:
             save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
