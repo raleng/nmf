@@ -12,10 +12,15 @@ import scipy.sparse.linalg as spla
 from utils import convergence_check, distance, nndsvd, save_results
 
 
-def initialize(data, features):
+def initialize(data, features, nndsvd_init):
     """ Initializing variables """
 
-    w, h = nndsvd(data, features)
+    if nndsvd_init[0]:
+        w, h = nndsvd(data, features, variant=nndsvd_init[1])
+    else:
+        w = np.abs(np.random.randn(data.shape[0], features))
+        h = np.abs(np.random.randn(features, data.shape[1]))
+
     x = w @ h
 
     w_p = w.copy()
@@ -60,7 +65,10 @@ def x_update(v, wh, alpha_x, rho, distance_type='kl'):
 
 def prox(prox_type, mat_aux, dual, rho=None, lambda_=None):
     if prox_type == 'nn':
-        return np.maximum(mat_aux + 1/rho*dual, 0)
+        # return np.maximum(mat_aux + 1/rho * dual, 0)
+        diff = mat_aux - dual
+        mat = np.where(diff < 0, 0, diff)
+        return mat
 
     elif prox_type == 'l2n':
         n = mat_aux.shape[0]
@@ -70,6 +78,8 @@ def prox(prox_type, mat_aux, dual, rho=None, lambda_=None):
 
         a = (lambda_ * tikh.T @ tikh - rho * sp.eye(n))
         b = rho * mat_aux - dual
+        # a = 1/rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
+        # b = mat_aux - dual
         mat = spla.spsolve(a, b)
 
         mat = np.where(mat < 0, 0, mat)
@@ -92,7 +102,8 @@ def alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w, alpha_h, rho):
 
 
 def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
-         min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3, save_dir='./results/'):
+         min_iter=10, max_iter=100000, tol1=1e-3, tol2=1e-3, nndsvd_init=(True, 'zero'),
+         save_dir='./results/'):
     """ NMF with ADMM
 
     Expects following arguments:
@@ -120,6 +131,11 @@ def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
         lambda_h=reg_h[0],
         prox_h=reg_h[1],
     )
+    if nndsvd_init[0]:
+        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
+    else:
+        save_name += '_random'
+
     save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
@@ -132,7 +148,7 @@ def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h = initialize(v, k)
+    x, w, h, w_p, h_p, alpha_x, alpha_w, alpha_h = initialize(v, k, nndsvd_init)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
@@ -149,7 +165,7 @@ def admm(v, k, *, rho=1, distance_type='kl', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
         w_p = prox(reg_w[1], w, alpha_w, rho=rho, lambda_=reg_w[0])
         h_p = prox(reg_h[1], h.T, alpha_h.T, rho=rho, lambda_=reg_h[0])
         h_p = h_p.T
-        #w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
+        # w_p, h_p = wh_p_update(w, h, alpha_w, alpha_h, rho)
         alpha_x, alpha_h, alpha_w, = alpha_update(x, w, h, wh, w_p, h_p, alpha_x, alpha_w,
                                                   alpha_h, rho)
 

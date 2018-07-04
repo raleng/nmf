@@ -1,10 +1,10 @@
 # either mur, anls, admm, admm_nnls, or ao_admm
-method = 'anls'
+method = 'admm_from_aoadmm'
 
 # NMF Variables
 features = [5]
-lambda_w = [0]
-lambda_h = range(0, 10)
+lambda_w = [0.1]
+lambda_h = [0.1]
 
 # Phantom
 phantom = 'phantom1'
@@ -19,21 +19,23 @@ tol2 = 1e-3
 # method specifics
 if method == 'mur':
     distance_type = 'eu'
-    nndsvd_init = False
+    nndsvd_init = (True, 'mean')
 
 elif method == 'anls':
-    use_fcnnls = False
+    use_fcnnls = True
+    nndsvd_init = (True, 'mean')
 
 elif method == 'admm_nnls':
-    rho = [100]
+    rho = [10]
     use_fcnnls = False
 
 elif method == 'admm':
     distance_type = 'eu'
-    rho = [100]
+    rho = [10]
+    nndsvd_init = (True, 'zero')
 
     prox_w = 'nn'
-    prox_h = 'l2n'
+    prox_h = 'nn'
     if prox_w == 'nn':
         lambda_w = [0]
     if prox_h == 'nn':
@@ -46,6 +48,19 @@ elif method == 'ao_admm':
 
     prox_w = 'l1inf_transpose'
     prox_h = 'nn'
+    if prox_w == 'nn':
+        lambda_w = [0]
+    if prox_h == 'nn':
+        lambda_h = [0]
+
+elif method == 'admm_from_aoadmm':
+    distance_type = 'eu'
+    loss_type = 'kl'
+    rho = [1]
+    admm_iter = 10
+
+    prox_w = 'l2n'
+    prox_h = 'l2n'
     if prox_w == 'nn':
         lambda_w = [0]
     if prox_h == 'nn':

@@ -33,7 +33,7 @@ def distance(x, wh, distance_type='kl'):
     return value
 
 
-def nndsvd(x, rank=None):
+def nndsvd(x, rank=None, variant='zero'):
     """ svd based nmf initialization
 
     Paper:
@@ -80,6 +80,15 @@ def nndsvd(x, rank=None):
         else:
             w[:, i] = np.sqrt(s[i] * norm_neg) / ui_neg_norm * ui_neg
             h[i, :] = np.sqrt(s[i] * norm_neg) / vi_neg_norm * vi_neg.T
+
+    if variant == 'mean':
+        w = np.where(w == 0, np.mean(x), w)
+        h = np.where(h == 0, np.mean(x), h)
+    elif variant == 'random':
+        random_matrix = np.mean(x) * np.random.random_sample(w.shape) / 100
+        w = np.where(w == 0, random_matrix, w)
+        random_matrix = np.mean(x) * np.random.random_sample(h.shape) / 100
+        h = np.where(h == 0, random_matrix, h)
 
     return w, h
 

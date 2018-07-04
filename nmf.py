@@ -80,6 +80,7 @@ def main(param_file='parameters'):
                 max_iter=params.max_iter,
                 tol1=params.tol1,
                 tol2=params.tol2,
+                nndsvd_init=params.nndsvd_init,
                 save_dir=params.save_dir,
                 )
     elif params.method == 'admm':
@@ -99,6 +100,7 @@ def main(param_file='parameters'):
                 max_iter=params.max_iter,
                 tol1=params.tol1,
                 tol2=params.tol2,
+                nndsvd_init=params.nndsvd_init,
                 save_dir=params.save_dir,
             )
     elif params.method == 'admm_nnls':
@@ -129,6 +131,28 @@ def main(param_file='parameters'):
             ao_admm.ao_admm(
                 data,
                 features,
+                distance_type=params.distance_type,
+                loss_type=params.loss_type,
+                reg_w=(lambda_w, params.prox_w),
+                reg_h=(lambda_h, params.prox_h),
+                min_iter=params.min_iter,
+                max_iter=params.max_iter,
+                admm_iter=params.admm_iter,
+                tol1=params.tol1,
+                tol2=params.tol2,
+                save_dir=params.save_dir,
+            )
+
+    elif params.method == 'admm_from_aoadmm':
+        import admm_from_aoadmm
+        for features, rho, lambda_w, lambda_h in product(params.features,
+                                                         params.rho,
+                                                         params.lambda_w,
+                                                         params.lambda_h):
+            admm_from_aoadmm.admm(
+                data,
+                features,
+                rho=rho,
                 distance_type=params.distance_type,
                 loss_type=params.loss_type,
                 reg_w=(lambda_w, params.prox_w),

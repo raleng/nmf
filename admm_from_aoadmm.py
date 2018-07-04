@@ -16,18 +16,17 @@ from utils import convergence_check, distance, nndsvd, save_results
 
 def initialize(data, features, loss):
 
-    w, h = nndsvd(data, features)
-    w = np.abs(np.random.randn(data.shape[0], features))
-    h = np.abs(np.random.randn(features, data.shape[1]))
+    w, h = nndsvd(data, features, variant='zero')
+    # w = np.abs(np.random.randn(data.shape[0], features))
+    # h = np.abs(np.random.randn(features, data.shape[1]))
+    w_aux = w.copy()
+    h_aux = h.copy()
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
 
-    if loss == 'kl':
-        y_dual = np.zeros_like(data)
-    else:
-        y_dual = None
+    y_dual = np.zeros_like(data)
 
-    return w, h, dual_w, dual_h, y_dual, y_dual
+    return w, h, w_aux, h_aux, dual_w, dual_h, y_dual, y_dual
 
 
 def terminate(mat, mat_prev, aux, dual, tol=1e-2):
@@ -58,7 +57,7 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
     for i in range(admm_iter):
         h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
         h_prev = h.copy()
-        h = prox(prox_type, h_aux, dual, rho=rho, lambda_=lambda_)
+        h = prox(prox_type, h_aux.T, dual.T, rho=rho, lambda_=lambda_)
         print(np.max(h))
         dual = dual + h - h_aux
 
@@ -85,7 +84,7 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
         # h_aux  and h update
         h_aux = la.cho_solve((cho, True), w.T @ (v_aux + dual_v) + rho * (h + dual_h))
         h_prev = h.copy()
-        h = prox(prox_type, h_aux, dual_h, rho=rho, lambda_=lambda_)
+        h = prox(prox_type, h_aux.T, dual_h.T, rho=rho, lambda_=lambda_)
 
         # v_aux update
         v_bar = w @ h_aux - dual_v
@@ -199,9 +198,15 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
         raise TypeError('Unknown prox_type.')
 
 
-def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
-            reg_h=(0, 'l2n'), min_iter=10, max_iter=100000, admm_iter=10,
-            tol1=1e-3, tol2=1e-3, save_dir='./results/'):
+def aux_update(mat, dual, other_aux, data_aux, data_dual, rho):
+    a = other_aux.T @ other_aux + rho * np.eye(other_aux.shape[1])
+    b = other_aux.T @ (data_aux + data_dual) + rho * (mat + dual)
+    mat_aux = np.linalg.solve(a, b)
+    return mat_aux
+
+
+def admm(v, k, *, rho=1, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
+         min_iter=10, max_iter=100000, admm_iter=10, tol1=1e-3, tol2=1e-3, save_dir='./results/'):
     """ AO-ADMM framework for NMF
 
     following paper by:
@@ -212,8 +217,9 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_ao_admm_{feat}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
+    save_name = 'nmf_admmfromaoadmm_{feat}_{rho}_{dist}_{loss}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
         feat=k,
+        rho=rho,
         dist=distance_type,
         loss=loss_type,
         lambda_w=reg_w[0],
@@ -237,44 +243,27 @@ def ao_admm(v, k, *, distance_type='eu', loss_type='ls', reg_w=(0, 'nn'),
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
+    w, h, w_aux, h_aux, dual_w, dual_h, v_aux, dual_v = initialize(v, k, loss_type)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
 
     # Main iteration
     for i in range(max_iter):
-        if loss_type == 'ls':
-            h, dual_h = admm_ls_update(v, w, h, dual_h, k,
-                                       lambda_=reg_h[0],
-                                       prox_type=reg_h[1],
-                                       admm_iter=admm_iter)
-            print('did h')
-            w, dual_w = admm_ls_update(v.T, h.T, w.T, dual_w.T, k,
-                                       lambda_=reg_w[0],
-                                       prox_type=reg_w[1],
-                                       admm_iter=admm_iter)
-            print(np.min(w), np.max(w))
-            w = w.T
-            dual_w = dual_w.T
+        h_aux = aux_update(h, dual_h, w_aux, v_aux, dual_v, rho)
+        w_aux = aux_update(w.T, dual_w.T, h_aux.T, v_aux.T, dual_v.T, rho)
+        w_aux = w_aux.T
 
-        elif loss_type == 'kl':
-            h, dual_h, v_aux, dual_v = admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k,
-                                                      lambda_=reg_h[0],
-                                                      prox_type=reg_h[1],
-                                                      admm_iter=admm_iter)
-            w, dual_w, v_aux, dual_v = admm_kl_update(v.T, v_aux.T, dual_v.T, h.T, w.T,
-                                                      dual_w.T, k,
-                                                      lambda_=reg_h[0],
-                                                      prox_type=reg_h[1],
-                                                      admm_iter=admm_iter)
-            w = w.T
-            dual_w = dual_w.T
-            v_aux = v_aux.T
-            dual_v = dual_v.T
+        h = prox(reg_h[1], h_aux, dual_h, rho=rho, lambda_=reg_h[0])
+        w = prox(reg_w[1], w_aux.T, dual_w.T, rho=rho, lambda_=reg_w[0])
+        w = w.T
 
-        else:
-            raise TypeError('Unknown loss function type.')
+        v_bar = w_aux @ h_aux - dual_v
+        v_aux = 1/2 * ((v_bar-1) + np.sqrt((v_bar-1)**2 + 4*v))
+
+        dual_h = dual_h + h - h_aux
+        dual_w = dual_w + w - w_aux
+        dual_v = dual_v + v_aux - w_aux @ h_aux
 
         # Iteration info
         obj_history.append(distance(v, w@h, distance_type=distance_type))

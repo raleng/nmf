@@ -79,7 +79,7 @@ def h_update(distance_type, x, w, h, wh, lambda_h=0):
 
 
 def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, tol2=1e-5,
-        lambda_w=0.0, lambda_h=0.0, nndsvd_init=False, save_dir='./results/'):
+        lambda_w=0.0, lambda_h=0.0, nndsvd_init=(False, 'zero'), save_dir='./results/'):
     """ NMF with MUR
 
     Expects following arguments:
@@ -106,7 +106,10 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         l_w=lambda_w,
         l_h=lambda_h,
     )
-    save_name += '_nndsvd' if nndsvd_init else '_random'
+    if nndsvd_init[0]:
+        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
+    else:
+        save_name += '_random'
     save_str = os.path.join(save_dir, save_name)
 
     # save all parameters in dict; to be saved with the results
@@ -135,8 +138,8 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     # x = x/np.max(x[:])
 
     # initialize W and H
-    if nndsvd_init:
-        w, h = nndsvd(x, k)
+    if nndsvd_init[0]:
+        w, h = nndsvd(x, k, variant=nndsvd_init[1])
     else:
         w = np.abs(np.random.randn(x.shape[0], k))
         h = np.abs(np.random.randn(k, x.shape[1]))

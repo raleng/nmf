@@ -15,9 +15,9 @@ from utils import convergence_check, distance, nndsvd, save_results
 
 def initialize(data, features):
     """ Initializing variables """
-    # w = np.abs(np.random.randn(dims[0], features))
-    # h = np.abs(np.random.randn(features, dims[1]))
-    w, h = nndsvd(data, features)
+    w = np.abs(np.random.randn(data.shape[0], features))
+    h = np.abs(np.random.randn(features, data.shape[1]))
+    #    w, h = nndsvd(data, features, variant='mean')
     x = w @ h
     alpha_x = np.zeros_like(x)
     return x, w, h, alpha_x

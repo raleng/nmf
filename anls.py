@@ -46,7 +46,7 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
 
 
 def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_iter=1000,
-         tol1=1e-3, tol2=1e-3, save_dir='./results/'):
+         tol1=1e-3, tol2=1e-3, nndsvd_init=(True, 'zero'), save_dir='./results/'):
     """ NMF via ANLS with FCNNLS
 
     according to the follow papers:
@@ -66,6 +66,11 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
         lambda_w=lambda_w,
         lambda_h=lambda_h,
     )
+    if nndsvd_init[0]:
+        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
+    else:
+        save_name += '_random'
+
     if use_fcnnls:
         save_name = '{}_fcnnls'.format(save_name)
 
@@ -86,12 +91,11 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
-    # Random W, H init
-    # w = np.random.rand(x.shape[0], k)
-    # h = np.random.rand(k, x.shape[1])
-
-    # NNDSVD W, H init
-    w, h = nndsvd(x, k)
+    if nndsvd_init[0]:
+        w, h = nndsvd(x, k, variant=nndsvd_init[1])
+    else:
+        w = np.random.rand(x.shape[0], k)
+        h = np.random.rand(k, x.shape[1])
 
     # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
 
