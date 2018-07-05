@@ -265,8 +265,8 @@ def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_
                                                       admm_iter=admm_iter)
             w, dual_w, v_aux, dual_v = admm_kl_update(v.T, v_aux.T, dual_v.T, h.T, w.T,
                                                       dual_w.T, k,
-                                                      lambda_=reg_h[0],
-                                                      prox_type=reg_h[1],
+                                                      lambda_=reg_w[0],
+                                                      prox_type=reg_w[1],
                                                       admm_iter=admm_iter)
             w = w.T
             dual_w = dual_w.T

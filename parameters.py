@@ -1,14 +1,14 @@
 # either mur, anls, admm, admm_nnls, or ao_admm
-method = 'admm'
+method = 'ao_admm'
 
 # NMF Variables
 features = [5]
-lambda_w = [0.01]
-lambda_h = [1]
+lambda_w = [10]
+lambda_h = [70]
 
 # Phantom
 phantom = 'phantom1'
-phantom_version = 'exact'  # exact / noise
+phantom_version = 'noise'  # exact / noise
 
 # Iteration/Algorithm Variables
 min_iter = 25
@@ -30,9 +30,10 @@ elif method == 'admm_nnls':
     use_fcnnls = False
 
 elif method == 'admm':
-    distance_type = 'eu'
+    distance_type = 'kl'
     rho = [10]
     nndsvd_init = (True, 'zero')
+    min_iter = 100
 
     prox_w = 'l2n'
     prox_h = 'l2n'
@@ -42,9 +43,10 @@ elif method == 'admm':
         lambda_h = [0]
 
 elif method == 'ao_admm':
-    distance_type = 'eu'
+    distance_type = 'kl'
     admm_iter = 10
     nndsvd_init = (True, 'zero')
+    min_iter = 100
 
     prox_w = 'l2n'
     prox_h = 'l2n'

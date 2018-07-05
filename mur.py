@@ -15,11 +15,11 @@ def normalize(w):
     norm = la.norm(w, axis=0, ord=1)
     wn = w / norm
 
-    #hn = np.zeros_like(h)
-    #for i in range(h.shape[1]):
-    #    hn[:, i] = h[:, i] * norm
+    # hn = np.zeros_like(h)
+    # for i in range(h.shape[1]):
+    #     hn[:, i] = h[:, i] * norm
 
-    return wn #, hn
+    return wn  # , hn
 # def normalize(norm, h):
 #     """ Normalizing with H """
 #
@@ -33,19 +33,19 @@ def normalize(w):
 #     return norms
 
 
-def w_update(distance_type, x, w, h, wh, lambda_w=0):
+def w_update(distance_type, x, w, h, wh, lambda_w=0.):
     """ MUR Update and normalization """
 
     # Update step
     if distance_type == 'kl':
-        pass
-        w = w * ((x / (wh+1e-9)) @ h.T)
-        w /= np.ones_like(x) @ h.T
+        # pass
+        # w = w * ((x / (wh+1e-9)) @ h.T)
+        # w /= np.ones_like(x) @ h.T
 
         # Alternate update?
-        # b = np.ones((x.shape[0], x.shape[1])) @ h.T
-        # a = w * ((x / (wh+1e-9)) @ h.T)
-        # w = 2 * a / (b + np.sqrt(b * b + 4 * lambda_w * a))
+        a = w * ((x / (wh+1e-9)) @ h.T)
+        b = np.ones_like(x) @ h.T
+        w = 2 * a / (b + np.sqrt(b**2 + 4 * lambda_w * a))
     elif distance_type == 'eu':
         w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
         # w = w * (x @ h.T) / (wh @ h.T + 1e-9)
@@ -55,19 +55,19 @@ def w_update(distance_type, x, w, h, wh, lambda_w=0):
     return w
 
 
-def h_update(distance_type, x, w, h, wh, lambda_h=0):
+def h_update(distance_type, x, w, h, wh, lambda_h=0.):
     """ MUR Update with normalization """
 
     # Update step
     if distance_type == 'kl':
-        pass
-        h = h * (w.T @ (x / (wh+1e-9)))
-        h /= w.T @ np.ones_like(x)
+        # pass
+        # h = h * (w.T @ (x / (wh+1e-9)))
+        # h /= w.T @ np.ones_like(x)
 
         # Alternative Update?
-        # c = h * (w.T @ (x / (wh+1e-9)))
-        # d = lambda_h1 * np.ones(h.shape) + w.T @ np.ones((x.shape[0], x.shape[1]))
-        # h = 2 * c / (d + np.sqrt(d * d + 4 * lambda_h2 * c))
+        c = h * (w.T @ (x / (wh+1e-9)))
+        d = 0 * np.ones(h.shape) + w.T @ np.ones_like(x)
+        h = 2 * c / (d + np.sqrt(d**2 + 4 * lambda_h * c))
     elif distance_type == 'eu':
         h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
 
@@ -175,7 +175,7 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
                 break
 
         # save every XX iterations
-        if i % 100 == 0:
+        if i % 20 == 0:
             save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
