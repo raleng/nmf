@@ -282,7 +282,8 @@ def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_
 
         # Check convergence; save and break iteration
         if i > min_iter:
-            converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
+            # last to entries of obj_history, but reversed
+            converged = convergence_check(obj_history[-2:][::-1], tol1, tol2)
             if converged:
                 save_results(save_str, w, h, i, obj_history, experiment_dict)
                 print('Converged.')

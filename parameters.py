@@ -1,10 +1,10 @@
 # either mur, anls, admm, admm_nnls, or ao_admm
-method = 'ao_admm'
+method = 'admm'
 
 # NMF Variables
-features = [5]
-lambda_w = [10]
-lambda_h = [70]
+features = [3, 4, 5]
+lambda_w = [20]
+lambda_h = [80]
 
 # Phantom
 phantom = 'phantom1'

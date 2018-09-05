@@ -202,21 +202,20 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
 
 
 def aux_update(mat, dual, other_aux, data_aux, data_dual, rho, distance_type):
+    """ update the auxiliary admm variables """
 
     if distance_type == 'eu':
         a = other_aux.T @ other_aux + rho * np.eye(other_aux.shape[1])
         b = other_aux.T @ data_aux + rho * (mat + dual)
-        mat_aux = np.linalg.solve(a, b)
 
     elif distance_type == 'kl':
         a = other_aux.T @ other_aux + rho * np.eye(other_aux.shape[1])
         b = other_aux.T @ (data_aux + data_dual) + rho * (mat + dual)
-        mat_aux = np.linalg.solve(a, b)
 
     else:
         raise TypeError('Unknown loss type.')
 
-    return mat_aux
+    return np.linalg.solve(a, b)
 
 
 def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
@@ -303,7 +302,8 @@ def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
 
         # Check convergence; save and break iteration
         if i > min_iter:
-            converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
+            # unpacking the last to entries of obj_history and reversing order
+            converged = convergence_check(*obj_history[-2:][::-1], tol1, tol2)
             if converged:
                 save_results(save_str, w, h, i, obj_history, experiment_dict)
                 print('Converged.')

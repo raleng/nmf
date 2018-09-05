@@ -99,7 +99,9 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
 
     # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
 
-    obj_history = [1e10]
+
+    # obj_history = [1e10]
+    obj_history = [distance(x, w@h)]
     # MAIN ITERATION
     for i in range(max_iter):
 
