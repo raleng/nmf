@@ -239,7 +239,7 @@ def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
     # initialize
-    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, distance_type)
+    w, h, dual_w, dual_h, v_aux, dual_v = initialize(v, k, nndsvd_init)
 
     # initial distance value
     obj_history = [distance(v, w@h, distance_type=distance_type)]
