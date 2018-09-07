@@ -15,7 +15,7 @@ def convergence_check(new, old, tol1, tol2):
     return convergence_break
 
 
-def distance(x, wh, distance_type='kl'):
+def distance(x, wh, distance_type='eu'):
     """ distance function for Kullback-Leibler divergence and Euclidean distance """
 
     if distance_type == 'kl':
