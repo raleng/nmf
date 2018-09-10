@@ -73,6 +73,7 @@ def main(param_file='parameters'):
             anls.anls(
                 data,
                 features,
+                distance_type=params.distance_type,
                 use_fcnnls=params.use_fcnnls,
                 lambda_w=lambda_w,
                 lambda_h=lambda_h,

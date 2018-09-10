@@ -22,6 +22,7 @@ if method == 'mur':
     nndsvd_init = (True, 'mean')
 
 elif method == 'anls':
+    distance_type = 'eu'
     use_fcnnls = True
     nndsvd_init = (True, 'mean')
 

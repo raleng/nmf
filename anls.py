@@ -45,8 +45,9 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
     return h
 
 
-def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_iter=1000,
-         tol1=1e-3, tol2=1e-3, nndsvd_init=(True, 'zero'), save_dir='./results/'):
+def anls(x, k, *, distance_type='eu', use_fcnnls=False, lambda_w=0, lambda_h=0,
+         min_iter=10, max_iter=1000, tol1=1e-3, tol2=1e-3, nndsvd_init=(True, 'zero'),
+         save_dir='./results/'):
     """ NMF via ANLS with FCNNLS
 
     according to the follow papers:
@@ -61,8 +62,9 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
 
     # create folder, if not existing
     os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_anls_{feat}_{lambda_w}_{lambda_h}'.format(
+    save_name = 'nmf_anls_{feat}_{dist}_{lambda_w}_{lambda_h}'.format(
         feat=k,
+        dist=distance_type,
         lambda_w=lambda_w,
         lambda_h=lambda_h,
     )
@@ -99,9 +101,8 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
 
     # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
 
-
     # obj_history = [1e10]
-    obj_history = [distance(x, w@h)]
+    obj_history = [distance(x, w@h, distance_type)]
     # MAIN ITERATION
     for i in range(max_iter):
 
@@ -110,7 +111,7 @@ def anls(x, k, *, use_fcnnls=False, lambda_w=0, lambda_h=0, min_iter=10, max_ite
         h = h_update(x, w, lambda_h, use_fcnnls=use_fcnnls)
 
         # Iteration info
-        obj_history.append(distance(x, w@h))
+        obj_history.append(distance(x, w@h, distance_type))
         print('[{}]: {:.{}f}'.format(i, obj_history[-1], tol_precision))
 
         if i > min_iter:
