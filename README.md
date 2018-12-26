@@ -28,7 +28,7 @@ The default folder to save is `./results` and the default file name is construct
 
 ## Methods
 
-### MUR
+#### MUR
 
 Following the papers:
 * Lee, Seung: Learning the parts of objects by non-negative matrix factorization, 1999
@@ -45,7 +45,7 @@ Accepts following method parameters:
 * `nndsvd_init` -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
 * `save_dir` -- STRING: folder to which to save
 
-### ANLS
+#### ANLS
 
 Following the papers:
 * Kim, Park: Non-negative matrix factorization based on alternating non-negativity constrained least squares and active set method
@@ -62,7 +62,7 @@ Accepts following method parameters:
 * `nndsvd_init` -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
 * `save_dir` -- STRING: folder to which to save
 
-### ADMM
+#### ADMM
 
 Following the papers:
 * Huang, Sidiropoulos, Liavas: A flexible and efficient algorithmic framework for constrained matrix and tensor factorization, 2015
@@ -79,7 +79,7 @@ Accepts following method parameters:
 * `nndsvd_init` -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
 * `save_dir` -- STRING: folder to which to save
 
-### AO-ADMM
+#### AO-ADMM
 
 Following the papers:
 * Huang, Sidiropoulos, Liavas: A flexible and efficient algorithmic framework for constrained matrix and tensor factorization, 2015
