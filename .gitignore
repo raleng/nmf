@@ -19,10 +19,11 @@ delete_me
 # symbolic link
 data
 
-#pycharm & sublime
+#pycharm & sublime & vscode
 .idea
 *.sublime-project
 *.sublime-workspace
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
