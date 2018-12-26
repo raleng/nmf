@@ -15,24 +15,28 @@ from .utils import convergence_check, distance, nndsvd, save_results
 
 
 def initialize(data, features, nndsvd_init):
-
+    """ initialize variables for ADMM """
+    # init w, h
     if nndsvd_init[0]:
         w, h = nndsvd(data, features, variant=nndsvd_init[1])
     else:
         w = np.abs(np.random.randn(data.shape[0], features))
         h = np.abs(np.random.randn(features, data.shape[1]))
 
+    # init auxiliary variables for w, h
     w_aux = w.copy()
     h_aux = h.copy()
+
+    # init dual variables for w, h, y
     dual_w = np.zeros_like(w)
     dual_h = np.zeros_like(h)
-
     y_dual = np.zeros_like(data)
 
     return w, h, w_aux, h_aux, dual_w, dual_h, y_dual, y_dual
 
 
 def terminate(mat, mat_prev, aux, dual, tol=1e-2):
+    """ Stops ADMM iteration of the subproblems according to primal/dual residual """ 
 
     # relative primal residual
     r = norm(mat - aux)/norm(mat)
@@ -57,15 +61,19 @@ def admm_ls_update(y, w, h, dual, k, prox_type='nn', *, admm_iter=10, lambda_=0)
     cho = la.cholesky(g + rho * np.eye(g.shape[0]), lower=True)
     wty = w.T @ y
 
+    # start iteration
     for i in range(admm_iter):
+        # auxiliary update
         h_aux = la.cho_solve((cho, True), wty + rho * (h + dual))
         h_prev = h.copy()
+        # h update
         h = prox(prox_type, h_aux.T, dual.T, rho=rho, lambda_=lambda_)
-        print(np.max(h))
+        # dual update
         dual = dual + h - h_aux
 
+        # check residuals
         if terminate(h, h_prev, h_aux, dual):
-            print('ADMM break after {} iterations.'.format(i))
+            logging.info('ADMM break after {} iterations.'.format(i))
             break
 
     return h, dual
@@ -83,8 +91,9 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
     rho = np.trace(g)/k
     cho = la.cholesky(g + rho * np.eye(g.shape[0]), lower=True)
 
+    # start iteration
     for i in range(admm_iter):
-        # h_aux  and h update
+        # h_aux and h update
         h_aux = la.cho_solve((cho, True), w.T @ (v_aux + dual_v) + rho * (h + dual_h))
         h_prev = h.copy()
         h = prox(prox_type, h_aux.T, dual_h.T, rho=rho, lambda_=lambda_)
@@ -97,6 +106,7 @@ def admm_kl_update(v, v_aux, dual_v, w, h, dual_h, k, prox_type='nn',
         dual_h = dual_h + h - h_aux
         dual_v = dual_v + v_aux - w @ h_aux
 
+        # check residual
         if terminate(h, h_prev, h_aux, dual_h):
             print('ADMM break after {} iterations.'.format(i))
             break
@@ -116,6 +126,7 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
     if prox_type == 'nn':
         diff = mat_aux - dual
 
+        # project negative values to zero
         mat = np.where(diff < 0, 0, diff)
         return mat
 
@@ -123,6 +134,7 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
         diff = mat_aux - dual
         mat = diff - lambda_/rho
 
+        # project negative values to zero
         mat = np.where(mat < 0, 0, mat)
         return mat
 
@@ -135,11 +147,11 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
         # matinv = la.inv(lambda_ * tikh.T @ tikh + rho * np.eye(n))
         # mat = rho * matinv @ (mat_dual - dual)
 
-        # a had 1/rho instead of rho?
         a = 1/rho * (lambda_ * tikh.T @ tikh + rho * sp.eye(n))
         b = mat_aux - dual
         mat = spla.spsolve(a, b)
 
+        # project negative values to zero
         mat = np.where(mat < 0, 0, mat)
         return mat
 
@@ -223,10 +235,27 @@ def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
          save_dir='./results/'):
     """ AO-ADMM framework for NMF
 
-    following paper by:
+    Following paper:
     Huang, Sidiropoulos, Liavas (2015)
     A flexible and efficient algorithmic framework for constrained matrix and tensor
     factorization
+
+
+    Expects following arguments:
+    x -- 2D Data
+    k -- number of components
+
+    Accepts keyword arguments:
+    rho -- FLOAT: admm dampening parameter
+    distance_type -- STRING: 'eu' for Euclidean, 'kl' for Kullback-Leibler
+    reg_w -- Tuple(FLOAT, STRING): value und type of w-regularization
+    reg_h -- Tuple(FLOAT, STRING): value und type of h-regularization
+    min_iter -- INT: minimum number of iterations
+    max_iter -- INT: maximum number of iterations
+    tol1 -- FLOAT: convergence tolerance
+    tol2 -- FLOAT: convergence tolerance
+    nndsvd_init -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
+    save_dir -- STRING: folder to which to save
     """
 
     # experiment parameters and results namedtuple

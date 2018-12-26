@@ -14,26 +14,11 @@ def normalize(w):
     norm = la.norm(w, axis=0, ord=1)
     wn = w / norm
 
-    # hn = np.zeros_like(h)
-    # for i in range(h.shape[1]):
-    #     hn[:, i] = h[:, i] * norm
-
-    return wn  # , hn
-# def normalize(norm, h):
-#     """ Normalizing with H """
-#
-#     if norm == 'l1':
-#         norms = np.sum(h, 1)
-#     elif norm == 'l2':
-#         norms = np.sqrt(np.sum(h**2, 1))
-#     else:
-#         raise NameError('Don\'t recognize norm: {}'.format(norm))
-#
-#     return norms
+    return wn
 
 
 def w_update(distance_type, x, w, h, wh, lambda_w=0.):
-    """ MUR Update and normalization """
+    """ MUR Update """
 
     # Update step
     if distance_type == 'kl':
@@ -49,7 +34,7 @@ def w_update(distance_type, x, w, h, wh, lambda_w=0.):
 
 
 def h_update(distance_type, x, w, h, wh, lambda_h=0.):
-    """ MUR Update with normalization """
+    """ MUR Update """
 
     # Update step
     if distance_type == 'kl':
@@ -66,21 +51,25 @@ def h_update(distance_type, x, w, h, wh, lambda_h=0.):
 
 def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, tol2=1e-5,
         lambda_w=0.0, lambda_h=0.0, nndsvd_init=(False, 'zero'), save_dir='./results/'):
-    """ NMF with MUR
+    """ Non-negative matrix factorization using multiplicative update rules
+
+    Following the papers:
+    - Lee, Seung: Learning the parts of objects by non-negative matrix factorization, 1999
+    - Lee, Seung: Algorithms for non-negative matrix factorization, 2001 
 
     Expects following arguments:
     x -- 2D Data
     k -- number of components
 
     Accepts keyword arguments:
-    kl -- BOOL: if True, use Kullback Leibler, else Euclidean
-    norm -- STRING: what norm to use (l1 or l2)
+    distance_type -- STRING: 'eu' for Euclidean, 'kl' for Kullback Leibler
+    min_iter -- INT: minimum number of iterations
     max_iter -- INT: maximum number of iterations
     tol1 -- FLOAT: convergence tolerance
     tol2 -- FLOAT: convergence tolerance
     lambda_w -- FLOAT: regularization parameter for w-Update
     lambda_h -- FLOAT: regularization parameter for h-Update
-    nndsvd_init -- BOOL: if True, use NNDSVD initialization
+    nndsvd_init -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
     save_dir -- STRING: folder to which to save
     """
 
@@ -112,9 +101,6 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         x += amount
         logging.info('Data elevated by {}.'.format(amount))
 
-    # normalizing
-    # x = x/np.max(x[:])
-
     # initialize W and H
     if nndsvd_init[0]:
         w, h = nndsvd(x, k, variant=nndsvd_init[1])
@@ -123,21 +109,18 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         h = np.abs(np.random.randn(k, x.shape[1]))
 
     # precomputing w @ h
-    # saves one computation each iteration
     wh = w @ h
 
+    # initialize obj_history
     obj_history = [distance(x, wh, distance_type)]
 
-    print('Entering Main Loop.')
+    logging.info('Entering Main Loop.')
     # Main iteration
     for i in range(max_iter):
 
         # Update step
         w = w_update(distance_type, x, w, h, wh, lambda_w)
-        # w = normalize(w)
         h = h_update(distance_type, x, w, h, w @ h, lambda_h)
-        # Normalizing
-        # h = h / normalize(norm, h)[:, None]
         wh = w @ h
 
         # Iteration info

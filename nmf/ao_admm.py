@@ -207,6 +207,23 @@ def ao_admm(v, k, *, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'), min_
     Huang, Sidiropoulos, Liavas (2015)
     A flexible and efficient algorithmic framework for constrained matrix and tensor
     factorization
+
+
+    Expects following arguments:
+    v -- 2D Data
+    k -- number of components
+
+    Accepts keyword arguments:
+    distance_type -- STRING: 'eu' for Euclidean, 'kl' for Kullback-Leibler
+    reg_w -- Tuple(FLOAT, STRING): value und type of w-regularization
+    reg_h -- Tuple(FLOAT, STRING): value und type of h-regularization
+    min_iter -- INT: minimum number of iterations
+    max_iter -- INT: maximum number of iterations
+    admm_iter -- INT: maximum number of internal ADMM iterations
+    tol1 -- FLOAT: convergence tolerance
+    tol2 -- FLOAT: convergence tolerance
+    nndsvd_init -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
+    save_dir -- STRING: folder to which to save
     """
 
     # experiment parameters and results namedtuple

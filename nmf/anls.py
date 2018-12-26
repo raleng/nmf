@@ -50,16 +50,31 @@ def h_update(x, w, lambda_h, *, use_fcnnls=False):
 def anls(x, k, *, distance_type='eu', use_fcnnls=False, lambda_w=0, lambda_h=0,
          min_iter=10, max_iter=1000, tol1=1e-3, tol2=1e-3, nndsvd_init=(True, 'zero'),
          save_dir='./results/'):
-    """ NMF via ANLS with FCNNLS
-
-    according to the follow papers:
+    """ Non-negative matrix factorization using alternating non-negative least squares
+   
+    Following paper:
     - Kim, Park: Non-negative matrix factorization based on alternating non-negativity
         constrained least squares and active set method
 
-    fcnnls paper:
+    FCNNLS paper:
     - Benthem, Keenan: Fast algorithm for the solution of large-scale non-negativity-
         constrained least squares problems
 
+    Expects following arguments:
+    x -- 2D Data
+    k -- number of components
+
+    Accepts keyword arguments:
+    distance_type -- STRING: 'eu' for Euclidean, 'kl' for Kullback-Leibler
+    use_fcnnls -- BOOL: if true, use FCNNLS algorithm
+    lambda_w -- FLOAT: regularization parameter for w-Update
+    lambda_h -- FLOAT: regularization parameter for h-Update
+    min_iter -- INT: minimum number of iterations
+    max_iter -- INT: maximum number of iterations
+    tol1 -- FLOAT: convergence tolerance
+    tol2 -- FLOAT: convergence tolerance
+    nndsvd_init -- Tuple(BOOL, STRING): if BOOL = True, use NNDSVD-type STRING
+    save_dir -- STRING: folder to which to save
     """
 
     # experiment parameters and results namedtuple
@@ -89,6 +104,7 @@ def anls(x, k, *, distance_type='eu', use_fcnnls=False, lambda_w=0, lambda_h=0,
         w = np.random.rand(x.shape[0], k)
         h = np.random.rand(k, x.shape[1])
 
+    # initialize obj_history
     obj_history = [distance(x, w@h, distance_type)]
 
     # MAIN ITERATION
