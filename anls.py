@@ -1,4 +1,6 @@
 # system imports
+from collections import namedtuple
+import logging
 import os
 # noinspection PyUnresolvedReferences
 # import better_exceptions
@@ -60,49 +62,35 @@ def anls(x, k, *, distance_type='eu', use_fcnnls=False, lambda_w=0, lambda_h=0,
 
     """
 
-    # create folder, if not existing
-    os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_anls_{feat}_{dist}_{lambda_w}_{lambda_h}'.format(
-        feat=k,
-        dist=distance_type,
-        lambda_w=lambda_w,
-        lambda_h=lambda_h,
-    )
-    if nndsvd_init[0]:
-        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
-    else:
-        save_name += '_random'
+    # experiment parameters and results namedtuple
+    Experiment = namedtuple('Experiment', 'method components distance_type nndsvd_init max_iter tol1 tol2 lambda_w lambda_h fcnnls')
+    Results = namedtuple('Results', 'w h i obj_history experiment')
 
-    if use_fcnnls:
-        save_name = '{}_fcnnls'.format(save_name)
-
-    save_str = os.path.join(save_dir, save_name)
-
-    # save all parameters in dict; to be saved with the results
-    experiment_dict = {
-        'k': k,
-        'max_iter': max_iter,
-        'lambda_w': lambda_w,
-        'lambda_h': lambda_h,
-        'tol1': tol1,
-        'tol2': tol2,
-        'fcnnls': use_fcnnls,
-    }
+    # experiment parameters
+    experiment = Experiment(method='anls',
+                            components=k,
+                            distance_type=distance_type,
+                            nndsvd_init=nndsvd_init,
+                            max_iter=max_iter,
+                            tol1=tol1,
+                            tol2=tol2,
+                            lambda_w=lambda_w,
+                            lambda_h=lambda_h,
+                            fcnnls=use_fcnnls)
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
     tol_precision = int(format(tol, 'e').split('-')[1]) if tol < 1 else 2
 
+    # initialize w, h
     if nndsvd_init[0]:
         w, h = nndsvd(x, k, variant=nndsvd_init[1])
     else:
         w = np.random.rand(x.shape[0], k)
         h = np.random.rand(k, x.shape[1])
 
-    # sc_init = stop_criterium(x, w, h, lambda_w, lambda_h)
-
-    # obj_history = [1e10]
     obj_history = [distance(x, w@h, distance_type)]
+
     # MAIN ITERATION
     for i in range(max_iter):
 
@@ -117,13 +105,15 @@ def anls(x, k, *, distance_type='eu', use_fcnnls=False, lambda_w=0, lambda_h=0,
         if i > min_iter:
             converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
-                save_results(save_str, w, h, i, obj_history, experiment_dict)
-                print('Converged.')
-                break
+                results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
+                logging.warning('Converged.')
+                return results
 
-        if i % 100 == 0:
-            save_results(save_str, w, h, i, obj_history, experiment_dict)
+        # if i % 100 == 0:
+        #     save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
-        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
-        print('Max iteration reached.')
+        logging.info('Max iteration reached.')
+
+    results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
+    return results

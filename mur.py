@@ -2,8 +2,7 @@
 import logging
 import os
 
-# noinspection PyUnresolvedReferences
-import better_exceptions
+from collections import namedtuple
 import numpy as np
 import numpy.linalg as la
 
@@ -38,17 +37,11 @@ def w_update(distance_type, x, w, h, wh, lambda_w=0.):
 
     # Update step
     if distance_type == 'kl':
-        # pass
-        # w = w * ((x / (wh+1e-9)) @ h.T)
-        # w /= np.ones_like(x) @ h.T
-
-        # Alternate update?
         a = w * ((x / (wh+1e-9)) @ h.T)
         b = np.ones_like(x) @ h.T
         w = 2 * a / (b + np.sqrt(b**2 + 4 * lambda_w * a))
     elif distance_type == 'eu':
         w = w * (x @ h.T) / (wh @ h.T + lambda_w * w + 1e-9)
-        # w = w * (x @ h.T) / (wh @ h.T + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
@@ -60,18 +53,11 @@ def h_update(distance_type, x, w, h, wh, lambda_h=0.):
 
     # Update step
     if distance_type == 'kl':
-        # pass
-        # h = h * (w.T @ (x / (wh+1e-9)))
-        # h /= w.T @ np.ones_like(x)
-
-        # Alternative Update?
         c = h * (w.T @ (x / (wh+1e-9)))
         d = 0 * np.ones(h.shape) + w.T @ np.ones_like(x)
         h = 2 * c / (d + np.sqrt(d**2 + 4 * lambda_h * c))
     elif distance_type == 'eu':
         h = h * (w.T @ x) / (w.T @ wh + lambda_h * h + 1e-9)
-
-        # h = h * (w.T @ x) / (w.T @ wh + 1e-9)
     else:
         raise KeyError('Unknown distance type.')
 
@@ -98,29 +84,21 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
     save_dir -- STRING: folder to which to save
     """
 
-    # create folder, if not existing
-    os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_mur_{feat}_{dist}_{l_w}_{l_h}'.format(
-        feat=k,
-        dist=distance_type,
-        l_w=lambda_w,
-        l_h=lambda_h,
-    )
-    if nndsvd_init[0]:
-        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
-    else:
-        save_name += '_random'
-    save_str = os.path.join(save_dir, save_name)
+    # experiment parameters and results namedtuple
+    Experiment = namedtuple('Experiment', 'method components distance_type nndsvd_init max_iter tol1 tol2 lambda_w lambda_h')
+    Results = namedtuple('Results', 'w h i obj_history experiment')
 
-    # save all parameters in dict; to be saved with the results
-    experiment_dict = {'k': k,
-                       'distance_type': distance_type,
-                       'max_iter': max_iter,
-                       'tol1': tol1,
-                       'tol2': tol2,
-                       'lambda_w': lambda_w,
-                       'lambda_h': lambda_h,
-                       }
+    # experiment parameters
+    experiment = Experiment(method='mur',
+                            components=k,
+                            distance_type=distance_type,
+                            nndsvd_init=nndsvd_init,
+                            max_iter=max_iter,
+                            tol1=tol1,
+                            tol2=tol2,
+                            lambda_w=lambda_w,
+                            lambda_h=lambda_h)
+
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
@@ -170,15 +148,16 @@ def mur(x, k, *, distance_type='kl', min_iter=100, max_iter=100000, tol1=1e-5, t
         if i > min_iter:
             converged = convergence_check(obj_history[-1], obj_history[-2], tol1, tol2)
             if converged:
-                save_results(save_str, w, h, i, obj_history, experiment_dict)
+                results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
                 logging.warning('Converged.')
-                break
+                return results
 
         # save every XX iterations
-        if i % 20 == 0:
-            save_results(save_str, w, h, i, obj_history, experiment_dict)
+        # if i % 50 == 0 and saving:
+        #    save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
-        # save on max_iter
-        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
         logging.info('Max iteration reached.')
+
+    results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
+    return results

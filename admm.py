@@ -1,7 +1,7 @@
 # system imports
+from collections import namedtuple
+import logging
 import os
-# noinspection PyUnresolvedReferences
-import better_exceptions
 
 # math imports
 import numpy as np
@@ -229,30 +229,24 @@ def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
     factorization
     """
 
-    # create folder, if not existing
-    os.makedirs(save_dir, exist_ok=True)
-    save_name = 'nmf_admm_{feat}_{rho}_{dist}_{lambda_w}:{prox_w}_{lambda_h}:{prox_h}'.format(
-        feat=k,
-        rho=rho,
-        dist=distance_type,
-        lambda_w=reg_w[0],
-        prox_w=reg_w[1],
-        lambda_h=reg_h[0],
-        prox_h=reg_h[1],
-    )
-    if nndsvd_init[0]:
-        save_name += '_nndsvd{}'.format(nndsvd_init[1][0])
-    else:
-        save_name += '_random'
-    save_str = os.path.join(save_dir, save_name)
+    # experiment parameters and results namedtuple
+    Experiment = namedtuple('Experiment', 'method components distance_type nndsvd_init max_iter tol1 tol2 lambda_w prox_w lambda_h prox_h')
+    Results = namedtuple('Results', 'w h i obj_history experiment')
 
-    # save all parameters in dict; to be saved with the results
-    experiment_dict = {'k': k,
-                       'min_iter': min_iter,
-                       'max_iter': max_iter,
-                       'tol1': tol1,
-                       'tol2': tol2,
-                       }
+    # experiment parameters
+    experiment = Experiment(method='admm',
+                            components=k,
+                            distance_type=distance_type,
+                            nndsvd_init=nndsvd_init,
+                            min_iter=min_iter,
+                            max_iter=max_iter,
+                            tol1=tol1,
+                            tol2=tol2,
+                            lambda_w=reg_w[0],
+                            prox_w=reg_w[1],
+                            lambda_h=reg_h[0],
+                            prox_h=reg_h[1])
+
 
     # used for cmd line output; only show reasonable amount of decimal places
     tol = min(tol1, tol2)
@@ -305,15 +299,17 @@ def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
             # unpacking the last to entries of obj_history and reversing order
             converged = convergence_check(*obj_history[-2:][::-1], tol1, tol2)
             if converged:
-                save_results(save_str, w, h, i, obj_history, experiment_dict)
-                print('Converged.')
-                break
+                results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
+                logging.warning('Converged.')
+                return results
 
         # save every XX iterations
-        if i % 100 == 0:
-            save_results(save_str, w, h, i, obj_history, experiment_dict)
+        # if i % 100 == 0:
+        #     save_results(save_str, w, h, i, obj_history, experiment_dict)
 
     else:
         # save on max_iter
-        save_results(save_str, w, h, max_iter, obj_history, experiment_dict)
-        print('Max iteration reached.')
+        logging.info('Max iteration reached.')
+
+    results = Results(w=w, h=h, i=i, obj_history=obj_history, experiment=experiment)
+    return results

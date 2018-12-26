@@ -93,7 +93,7 @@ def nndsvd(x, rank=None, variant='zero'):
     return w, h
 
 
-def save_results(save_str, w, h, i, obj_history, experiment_dict):
+def save_results(save_str, w, h, i, obj_history, experiment):
     """ save results """
 
     # Normalizing
@@ -101,5 +101,5 @@ def save_results(save_str, w, h, i, obj_history, experiment_dict):
     # w = w * norm
 
     np.savez(save_str, w=w, h=h, i=i, obj_history=obj_history,
-             experiment_dict=experiment_dict)
+             experiment=experiment)
     print('Results saved in {}.'.format(save_str))

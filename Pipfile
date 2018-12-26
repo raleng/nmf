@@ -6,8 +6,10 @@ name = "pypi"
 [packages]
 begins = "*"
 scipy = "*"
+better-exceptions = "*"
 
 [dev-packages]
+pylint = "*"
 
 [requires]
 python_version = "3.7"

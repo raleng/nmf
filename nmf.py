@@ -1,191 +1,91 @@
-#!/usr/bin/env python
-import begin
+# TODO: method function need SAVE flag
+# TODO: maybe add a check for METHOD_PARAMS, that only valid params are included?
+
+import os
 from importlib import import_module
-from itertools import product
 
-from misc import loadme
+from utils import save_results
 
 
-@begin.start
-def main(param_file='parameters'):
-    """ NMF with ANLS """
+class NMF:
+    """ Docstring """
 
-    # Parameter import
-    try:
-        params = import_module(param_file)
-    except ImportError:
-        print('No parameter file found.')
-        return
+    def __init__(self, data=None, factors=None, saving=True, param_file=None):
+        self.data = data
+        self.factors = factors
+        self.saving = saving
+        if param_file is not None:
+            try:
+                parameters = import_module(param_file)
+                self.method_params = parameters.method_params
+            except ImportError:
+                print('No parameter file found.')
+                return
 
-    # Loading data
-    if params.phantom_version == 'noise':
-        load_var = 'sinodata_noise'
-    elif params.phantom_version == 'exact':
-        load_var = 'sinodata_exact'
-    else:
-        raise Exception('Unknown dataset: {}.'.format(params.phantom_version))
 
-    try:
-        if load_var == 'LOAD_MSOT':
-            data = loadme.msot(params.load_file)
-            print('Loaded MSOT data.')
+    def factorize(self, method='mur', saving=False, **method_params):
+        """ DOCSTRING """
+
+        if method == 'mur':
+            import mur
+            self.results = mur.mur(self.data, self.factors, **method_params)
+        
+        elif method == 'anls':
+            import anls
+            self.results = anls.anls(self.data, self.factors, **method_params)
+
+        elif method == 'admm':
+            import admm
+            self.results = admm.admm(self.data, self.factors, **method_params)
+
+        elif method == 'ao_admm':
+            import ao_admm
+            self.results = ao_admm.ao_admm(self.data, self.factors, **method_params)
+
         else:
-            data = loadme.mat(params.load_file, params.load_var)
-            print('Loaded PET data.')
-    except AttributeError:
-        print('No file/variable given.')
-        return
+            raise Exception('Method not known. Choose one from: mur anls admm ao_admm')
+    
+        print('Factorization done.')
+        if saving:
+            self.save_factorization() 
 
-    # Transform data dimensions
-    if data.ndim == 3:
-        data = data.reshape((data.shape[0]*data.shape[1], data.shape[2]), order='F')
-        print('Data was 3D. Reshaped to 2D.')
 
-    # Logging info for FCNNLS usage
-    if params.method in {'anls', 'admm_nnls'}:
-        if params.use_fcnnls:
-            print('Using FCNNLS.')
+    def save_factorization(self, save_dir='./results', save_name=None):
+        """ DOCSTRING """
+        # TODO: save_name needs to include more parameters and NNDSVD
+    
+        # create results folder, if not existing
+        os.makedirs(save_dir, exist_ok=True)
 
-    # Method call
-    if params.method == 'mur':
-        import mur
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
-            mur.mur(
-                data,
-                features,
-                distance_type=params.distance_type,
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                lambda_w=lambda_w,
-                lambda_h=lambda_h,
-                nndsvd_init=params.nndsvd_init,
-                save_dir=params.save_dir,
-            )
-    elif params.method == 'anls':
-        import anls
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
-            anls.anls(
-                data,
-                features,
-                distance_type=params.distance_type,
-                use_fcnnls=params.use_fcnnls,
-                lambda_w=lambda_w,
-                lambda_h=lambda_h,
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                nndsvd_init=params.nndsvd_init,
-                save_dir=params.save_dir,
-                )
-    elif params.method == 'admm':
-        import admm
-        for features, rho, lambda_w, lambda_h in product(params.features,
-                                                         params.rho,
-                                                         params.lambda_w,
-                                                         params.lambda_h):
-            admm.admm(
-                data,
-                features,
-                rho=rho,
-                distance_type=params.distance_type,
-                reg_w=(lambda_w, params.prox_w),
-                reg_h=(lambda_h, params.prox_h),
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                nndsvd_init=params.nndsvd_init,
-                save_dir=params.save_dir,
-            )
+        # generate standard save_name from parameters
+        if save_name is None:
+            save_name = f'nmf_{self.results.experiment.method}'
+            save_name += f'_{self.factors}'
+            save_name += f'_{self.results.experiment.distance_type}'
+            if self.results.experiment.method == 'admm':
+                save_name += f'_{self.results.experiment.rho}'
+            
+            save_name += f'_{self.results.experiment.lambda_w}'
+            if self.results.experiment.method in {'admm', 'ao_admm'}:
+                save_name += f':{self.results.experiment.prox_w}'
+            
+            save_name += f'_{self.results.experiment.lambda_h}'
+            if self.results.experiment.method in {'admm', 'ao_admm'}:
+                save_name += f':{self.results.experiment.prox_h}'
+        
+            if self.results.experiment.nndsvd_init[0]:
+                save_name += f'_nndsvd{self.results.experiment.nndsvd_init[1][0]}'
+            else:
+                save_name += '_random'
 
-    elif params.method == 'ao_admm':
-        import ao_admm
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
-            ao_admm.ao_admm(
-                data,
-                features,
-                distance_type=params.distance_type,
-                reg_w=(lambda_w, params.prox_w),
-                reg_h=(lambda_h, params.prox_h),
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                admm_iter=params.admm_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                nndsvd_init=params.nndsvd_init,
-                save_dir=params.save_dir,
-            )
+            if self.results.experiment.method == 'anls' and self.results.experiment.fcnnls:
+                save_name += '_fcnnls'
 
-    elif params.method == 'admm_nnls':
-        import admm_nnls
-        for features, rho, lambda_w, lambda_h in product(params.features,
-                                                         params.rho,
-                                                         params.lambda_w,
-                                                         params.lambda_h):
-            admm_nnls.admm_nnls(
-                data,
-                features,
-                rho=rho,
-                use_fcnnls=params.use_fcnnls,
-                lambda_w=lambda_w,
-                lambda_h=lambda_h,
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                save_dir=params.save_dir,
-                )
-
-    elif params.method == 'admm_old':
-        import admm_old
-        for features, rho, lambda_w, lambda_h in product(params.features,
-                                                         params.rho,
-                                                         params.lambda_w,
-                                                         params.lambda_h):
-            admm_old.admm(
-                data,
-                features,
-                rho=rho,
-                distance_type=params.distance_type,
-                reg_w=(lambda_w, params.prox_w),
-                reg_h=(lambda_h, params.prox_h),
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                admm_iter=params.admm_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                nndsvd_init=params.nndsvd_init,
-                save_dir=params.save_dir,
-            )
-
-    elif params.method == 'ao_admm_local':
-        import ao_admm_local_sparsity
-        for features, lambda_w, lambda_h in product(params.features,
-                                                    params.lambda_w,
-                                                    params.lambda_h):
-            ao_admm_local_sparsity.ao_admm(
-                data,
-                features,
-                distance_type=params.distance_type,
-                loss_type=params.loss_type,
-                reg_w=(lambda_w, params.prox_w),
-                reg_h=(lambda_h, params.prox_h),
-                min_iter=params.min_iter,
-                max_iter=params.max_iter,
-                admm_iter=params.admm_iter,
-                tol1=params.tol1,
-                tol2=params.tol2,
-                save_dir=params.save_dir,
-            )
-
-    else:
-        raise KeyError('Unknown method type.')
+        # create save string including folder and save
+        save_str = os.path.join(save_dir, save_name)
+        save_results(save_str,
+                     w = self.results.w,
+                     h = self.results.h,
+                     i = self.results.i,
+                     obj_history = self.results.obj_history,
+                     experiment = self.results.experiment)
