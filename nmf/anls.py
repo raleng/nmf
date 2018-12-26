@@ -11,8 +11,8 @@ import numpy as np
 from scipy import optimize
 
 # personal imports
-import fcnnls
-from utils import convergence_check, distance, nndsvd, save_results
+from . import fcnnls
+from .utils import convergence_check, distance, nndsvd, save_results
 
 
 def w_update(x, h, lambda_w, *, use_fcnnls=False):

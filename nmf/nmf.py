@@ -4,7 +4,7 @@
 import os
 from importlib import import_module
 
-from utils import save_results
+from . import utils
 
 
 class NMF:
@@ -27,19 +27,19 @@ class NMF:
         """ DOCSTRING """
 
         if method == 'mur':
-            import mur
+            from . import mur
             self.results = mur.mur(self.data, self.factors, **method_params)
-        
+
         elif method == 'anls':
-            import anls
+            from . import anls
             self.results = anls.anls(self.data, self.factors, **method_params)
 
         elif method == 'admm':
-            import admm
+            from . import admm
             self.results = admm.admm(self.data, self.factors, **method_params)
 
         elif method == 'ao_admm':
-            import ao_admm
+            from . import ao_admm
             self.results = ao_admm.ao_admm(self.data, self.factors, **method_params)
 
         else:
@@ -83,9 +83,9 @@ class NMF:
 
         # create save string including folder and save
         save_str = os.path.join(save_dir, save_name)
-        save_results(save_str,
+        utils.save_results(save_str,
                      w = self.results.w,
                      h = self.results.h,
                      i = self.results.i,
                      obj_history = self.results.obj_history,
-                     experiment = self.results.experiment)
+                     experiment = self.results.experiment._asdict())

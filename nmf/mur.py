@@ -6,7 +6,7 @@ from collections import namedtuple
 import numpy as np
 import numpy.linalg as la
 
-from utils import convergence_check, distance, nndsvd, save_results
+from .utils import convergence_check, distance, nndsvd, save_results
 
 
 def normalize(w):
