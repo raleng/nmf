@@ -259,12 +259,13 @@ def admm(v, k, *, rho=1, distance_type='eu', reg_w=(0, 'nn'), reg_h=(0, 'l2n'),
     """
 
     # experiment parameters and results namedtuple
-    Experiment = namedtuple('Experiment', 'method components distance_type nndsvd_init min_iter max_iter tol1 tol2 lambda_w prox_w lambda_h prox_h')
+    Experiment = namedtuple('Experiment', 'method components rho distance_type nndsvd_init min_iter max_iter tol1 tol2 lambda_w prox_w lambda_h prox_h')
     Results = namedtuple('Results', 'w h i obj_history experiment')
 
     # experiment parameters
     experiment = Experiment(method='admm',
                             components=k,
+                            rho=rho,
                             distance_type=distance_type,
                             nndsvd_init=nndsvd_init,
                             min_iter=min_iter,
