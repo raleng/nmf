@@ -140,7 +140,7 @@ def prox(prox_type, mat_aux, dual, *, rho=None, lambda_=None, upper_bound=1):
 
     elif prox_type == 'l2n':
         n = mat_aux.shape[0]
-        k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)])
+        k = -np.array([np.ones(n - 1), -2 * np.ones(n), np.ones(n - 1)], dtype=object)
         offset = [-1, 0, 1]
         tikh = sp.diags(k, offset)  # .toarray()
 
